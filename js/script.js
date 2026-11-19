@@ -558,6 +558,40 @@ function closeBillModal(){
   document.getElementById('billModal').style.display='none';
 }
 
+// ===== Clear Bills Button - Download Report pakkathula =====
+function clearBills(){
+  if(bills.length===0){ alert('Clear panna bill ye illa!'); return; }
+
+  if(!confirm('⚠️ ' + bills.length + 'Clear All')){
+    return;
+  }
+
+  // 1. Bills ellam clear
+  bills = [];
+  localStorage.setItem('ms_bills', JSON.stringify(bills));
+
+  // 2. Bill No-vum BILL001 la irundhu thirumba start aagum
+  localStorage.setItem('ms_next_bill_seq','0');
+  nextBillSeq = 0;
+  localStorage.setItem('ms_table_bill_nos', JSON.stringify({}));
+  tableBillNos = {};
+
+  // 3. Table Orders-um clear
+  tableOrders = {T1:[],T2:[],T3:[],T4:[],T5:[],T6:[],T7:[],T8:[],T9:[],T10:[]};
+  parcelOrders = {T1:0,T2:0,T3:0,T4:0,T5:0,T6:0,T7:0,T8:0,T9:0,T10:0};
+  parcelClicks = {T1:0,T2:0,T3:0,T4:0,T5:0,T6:0,T7:0,T8:0,T9:0,T10:0};
+  cart = [];
+  currentTable = null;
+
+  // 4. Screen-a update pannu
+  renderSaved();
+  updateBillNo();
+  renderCart();
+  renderHomeTables();
+
+  alert('✅ Clear Saved Bills');
+}
+
 function handlePrint(){
   var billEl = document.getElementById('rec');
   var text = billEl.innerText;
@@ -730,17 +764,53 @@ function confirmPrint(){
   if(!pendingPrintBill) return; let b=pendingPrintBill; document.getElementById('previewModal').style.display='none';
   bills.push(b); localStorage.setItem('ms_bills', JSON.stringify(bills));
   // Print window - 58mm
- let w=window.open('','_blank'); if(w){ w.document.write(`<html><head><style>
-@page{size:58mm auto;margin:0}
-body{font-family:monospace;width:58mm;margin:0 auto;padding:2mm;text-align:center;font-size:16px;line-height:1.4;color:#000}
-h3{font-size:22px;margin:2px 0}
-p{font-size:15px;margin:2px 0}
-div{font-size:16px}
-</style></head><body><h3>MS EMPORIUM</h3><p>Ph: 7397468500</p><hr><p style="text-align:left;font-size:13px">Bill: ${b.billNo}<br>Date: ${b.date}<br>Table: ${b.tableNo || '-'}</p><hr>
-${b.items.map(i=>`<div class="item" style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin:4px 0;text-align:left"><span style="font-size:16px;font-weight:600;word-wrap:break-word;flex:1">${i.name} x ${i.qty}</span><span style="font-size:16px;white-space:nowrap;padding-left:4px">Rs.${i.price*i.qty}</span></div>`).join('')}
-${b.parcelCharge?`<div style="display:flex;justify-content:space-between;font-size:16px">Parcel Charges <span>Rs.${b.parcelCharge}</span></div>`:''}<hr><div style="display:flex;justify-content:space-between;font-weight:bold;font-size:19px">TOTAL <span>Rs.${b.total}</span></div><p style="font-size:15px">Thank you! Visit Again</p></body></html>`); w.document.close(); setTimeout(()=>{ try{w.print()}catch(e){} },500); }
-  // Table clear - Point 5/6: indha table mattum clear, vera table safe
+  let w=window.open('','_blank');
+  if(w){
+    w.document.write('<html><head><style>@page{size:58mm auto;margin:0} body{width:58mm;margin:0 auto;padding:3mm;background:#fff;}</style></head><body>'
+      + buildReceiptHTML(b)
+      + '<script>setTimeout(function(){ window.print(); }, 800);<\/script></body></html>');
+    w.document.close();
+  }
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
   pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
   let sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' Saved & Print aachu! Table: '+b.tableNo; sm.style.display='block'; setTimeout(()=>sm.style.display='none',4000); }
+}
+function buildReceiptHTML(b){
+  // Date-a pirichu - Date thaniya, Time thaniya
+  var datePart = '', timePart = '';
+  if(b.date){
+    var parts = String(b.date).split(',');
+    datePart = (parts[0]||'').trim();
+    timePart = (parts[1]||'').trim();
+  } else if(b.billDate){ datePart = b.billDate; }
+
+  var itemsHtml = (b.items||[]).map(function(i){
+    // Notebook maari: Name + x Qty left, Price right - wrap aanaalum parava illa
+    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:14px 0;text-align:left;font-size:22px;line-height:1.35;">'
+      + '<span style="word-wrap:break-word;flex:1;">'+i.name+' &nbsp; x '+i.qty+'</span>'
+      + '<span style="white-space:nowrap;padding-left:8px;">Rs.'+(i.price*i.qty)+'</span>'
+      + '</div>';
+  }).join('');
+
+  var parcelHtml = b.parcelCharge
+    ? '<div style="display:flex;justify-content:space-between;font-size:22px;margin:14px 0;"><span>Parcel Charges</span><span>Rs.'+b.parcelCharge+'</span></div>'
+    : '';
+
+  return '<div style="width:54mm;margin:0 auto;text-align:center;font-family:monospace;color:#000;">'
+    + '<div style="font-size:22px;font-weight:900;letter-spacing:1px;">MS Emporium</div>'
+    + '<div style="font-size:22px;font-weight:900;margin-top:4px;">Ph: 7397468500</div>'
+    + '<hr style="border:none;border-top:1px dashed #000;margin:14px 0;">'
+    + '<div style="text-align:left;font-size:22px;line-height:1.7;">'
+    + '<div style="display:flex;justify-content:space-between;"><span>Bill</span><span>'+b.billNo+'</span></div>'
+    + '<div>Date : '+datePart+'</div>'
+    + '<div>Time : '+timePart+'</div>'
+    + '<div>Table Number :'+(b.tableNo||'-')+'</div>'
+    + '</div>'
+    + '<hr style="border:none;border-top:1px dashed #000;margin:14px 0;">'
+    + itemsHtml + parcelHtml
+    + '<hr style="border:none;border-top:1px dashed #000;margin:14px 0;">'
+    + '<div style="display:flex;justify-content:space-between;font-size:22px;font-weight:900;margin-top:6px;"><span>Total</span><span>Rs.'+b.total+'</span></div>'
+    + '<div style="font-size:22px;margin-top:10px;">Thank You Visit Again</div>'
+    + '<div style="font-size:22px;letter-spacing:2px;">******</div>'
+    + '</div>';
 }
