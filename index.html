@@ -89,6 +89,7 @@
       <button class="btn btn-dark btn-sm" onclick="showPage('billing')"><i class="bi bi-arrow-left"></i> Back to Menu</button>
       <div class="text-center"><h6 class="fw-bold m-0">Saved Bills <span id="cnt2" class="badge bg-secondary"></span></h6><small id="summary" class="text-muted"></small></div>
       <button class="btn btn-success btn-sm" onclick="downloadReport()"><i class="bi bi-download"></i> Download Report</button>
+      <button class="btn btn-outline-danger" onclick="clearBills()">🗑 Clear Bills</button>
     </div>
     <div class="table-responsive bg-white border rounded mt-3">
       <table class="table table-sm small mb-0"><thead class="table-light"><tr><th>BILL NO</th><th>DATE/TIME</th><th>TABLE NO</th><th>ITEMS</th><th>TOTAL</th><th></th></tr></thead><tbody id="savedBody"></tbody></table>
