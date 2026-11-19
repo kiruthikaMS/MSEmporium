@@ -632,32 +632,44 @@ function savePreviewAsPDF(){
       doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 6; newPageIfNeeded();
     }
     // ===== PREVIEW MAARIYE - Header Center =====
-    doc.setFont('courier','bold'); doc.setFontSize(16);
+    doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('MS EMPORIUM', CX, y, {align:'center'}); y += 6;
-    doc.setFont('courier','bold'); doc.setFontSize(11);
+    doc.setFont('courier','bold'); doc.setFontSize(15);
     doc.text('Ph: 7397468500', CX, y, {align:'center'}); y += 4;
     dashed();
     // Bill info - Preview la vara maari Left label / Right value
-    leftRight('Bill:', b.billNo, 12, true);
-    leftRight('Date:', b.date || b.billDate || '', 11, false);
-    leftRight('Table:', b.tableNo || '-', 12, true);
+    var datePart = '', timePart = '';
+if(b.billDate){
+  var d = String(b.billDate).split('-');
+  if(d.length===3) datePart = d[2] + '/' + d[1] + '/' + d[0];
+  else datePart = b.billDate;
+}
+if(b.date){
+  var parts = String(b.date).split(',');
+  if(!datePart) datePart = (parts[0]||'').trim();
+  timePart = (parts[1]||'').trim();
+}
+leftRight('Bill:', b.billNo, 14, false);
+leftRight('Date:', datePart, 14, false);
+leftRight('Time:', timePart, 14, false);
+leftRight('Table:', b.tableNo || '-', 14, false);
     dashed();
     // Items - Preview maari: Name full line, aprom x Qty left / Price right
     b.items.forEach(function(i){
-      doc.setFont('courier','bold'); doc.setFontSize(13);
+      doc.setFont('courier','bold'); doc.setFontSize(15);
       var nameLines = doc.splitTextToSize(i.name, 52);
       nameLines.forEach(function(nl){
         doc.text(nl, L, y); y += 6; newPageIfNeeded();
       });
-      leftRight('x ' + i.qty, 'Rs.' + (i.price*i.qty), 13, true);
+      leftRight('x ' + i.qty, 'Rs.' + (i.price*i.qty), 15, true);
       y += 1;
     });
     if(b.parcelCharge){ leftRight('Parcel Charges', 'Rs.'+b.parcelCharge, 12, true); }
     dashed();
     // TOTAL - Preview maari perusa bold
-    doc.setFont('courier','bold'); doc.setFontSize(16);
+    doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('TOTAL', L, y); doc.text('Rs.'+b.total, R, y, {align:'right'}); y += 8;
-    doc.setFont('courier','bold'); doc.setFontSize(11);
+    doc.setFont('courier','normal'); doc.setFontSize(15);
     doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 5;
     var fileName = (b.billNo || 'BILL001') + '.pdf';
     try{
