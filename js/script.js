@@ -622,7 +622,7 @@ function savePreviewAsPDF(){
   }
   try{
     var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, 200]});
+    var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, 260]});
     var W = 58, CX = 29, L = 2, R = 56;
     var y = 7;
     function newPageIfNeeded(){ if(y > 188){ doc.addPage([58,200]); y = 7; } }
@@ -669,7 +669,7 @@ leftRight('Table:', b.tableNo || '-', 14, false);
     // TOTAL - Preview maari perusa bold
     doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('TOTAL', L, y); doc.text('Rs.'+b.total, R, y, {align:'right'}); y += 8;
-    doc.setFont('courier','normal'); doc.setFontSize(15);
+    doc.setFont('courier','normal'); doc.setFontSize(13);
     doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 5;
     var fileName = (b.billNo || 'BILL001') + '.pdf';
     try{
