@@ -659,9 +659,18 @@ function savePreviewAsPDF(){
 
   // Page Height calculate - doc ku MUNNADI, try KULLA dhan podanum
   var itemsCount = (b.items||[]).length;
-  var pageHeight = 55 + (itemsCount * 13) + (b.parcelCharge ? 8 : 0);
-  if(pageHeight < 80) pageHeight = 80;
-  if(pageHeight > 260) pageHeight = 260;
+var totalNameLines = 0;
+(b.items||[]).forEach(function(it){
+  // Name eppadi wrap aagum nu calculate pannu
+  // 52 character ku oru line
+  var lines = Math.ceil(String(it.name||'').length / 26);
+  if(lines < 1) lines = 1;
+  totalNameLines += lines;
+});
+var pageHeight = 70 + (totalNameLines * 10) + (itemsCount * 8) + (b.parcelCharge ? 10 : 0) + 30;
+// 70 = Header + Bill info, 30 = Total + Thank You ku space
+if(pageHeight < 100) pageHeight = 100;
+if(pageHeight > 400) pageHeight = 400;
 
   var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, pageHeight]});
   // ... meedhi code ellam - dashed, leftRight, items, TOTAL, doc.save
@@ -669,7 +678,7 @@ function savePreviewAsPDF(){
 
        var W = 58, CX = 29, L = 2, R = 56;
     var y = 7;
-    function newPageIfNeeded(){ if(y > pageHeight - 12){ doc.addPage([58, pageHeight]); y = 7; } }
+    function newPageIfNeeded(){ if(y > pageHeight - 18){ doc.addPage([58, pageHeight]); y = 7; } }
     function dashed(){ doc.setFont('courier','bold'); doc.setFontSize(11); doc.text('------------------------------', CX, y, {align:'center'}); y += 5; newPageIfNeeded(); }
     function leftRight(left, right, size, bold){
       doc.setFont('courier', bold?'bold':'normal'); doc.setFontSize(size||12);
