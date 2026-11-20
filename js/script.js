@@ -655,13 +655,19 @@ function savePreviewAsPDF(){
     return;
   }
   try{
-    var jsPDF = window.jspdf.jsPDF;
-   var itemsCount = (b.items||[]).length;
-   var pageHeight = 55 + (itemsCount * 13) + (b.parcelCharge ? 8 : 0);
-    if(pageHeight < 80) pageHeight = 80;
-if(pageHeight > 260) pageHeight = 260;
-var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, pageHeight]});
-    var W = 58, CX = 29, L = 2, R = 56;
+  var jsPDF = window.jspdf.jsPDF;
+
+  // Page Height calculate - doc ku MUNNADI, try KULLA dhan podanum
+  var itemsCount = (b.items||[]).length;
+  var pageHeight = 55 + (itemsCount * 13) + (b.parcelCharge ? 8 : 0);
+  if(pageHeight < 80) pageHeight = 80;
+  if(pageHeight > 260) pageHeight = 260;
+
+  var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, pageHeight]});
+  // ... meedhi code ellam - dashed, leftRight, items, TOTAL, doc.save
+  // ELLAM indha try kulla dhan irukanum!
+
+       var W = 58, CX = 29, L = 2, R = 56;
     var y = 7;
     function newPageIfNeeded(){ if(y > pageHeight - 12){ doc.addPage([58, pageHeight]); y = 7; } }
     function dashed(){ doc.setFont('courier','bold'); doc.setFontSize(11); doc.text('------------------------------', CX, y, {align:'center'}); y += 5; newPageIfNeeded(); }
