@@ -776,41 +776,45 @@ function confirmPrint(){
   let sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' Saved & Print aachu! Table: '+b.tableNo; sm.style.display='block'; setTimeout(()=>sm.style.display='none',4000); }
 }
 function buildReceiptHTML(b){
-  // Date-a pirichu - Date thaniya, Time thaniya
   var datePart = '', timePart = '';
+  if(b.billDate){
+    var d = String(b.billDate).split('-');
+    if(d.length===3) datePart = d[2] + '/' + d[1] + '/' + d[0];
+    else datePart = b.billDate;
+  }
   if(b.date){
     var parts = String(b.date).split(',');
-    datePart = (parts[0]||'').trim();
+    if(!datePart) datePart = (parts[0]||'').trim();
     timePart = (parts[1]||'').trim();
-  } else if(b.billDate){ datePart = b.billDate; }
+  }
 
+  // Item - Name oru line, x Qty + Price innoru line - x 1 piriyadhu!
   var itemsHtml = (b.items||[]).map(function(i){
-    // Notebook maari: Name + x Qty left, Price right - wrap aanaalum parava illa
-    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:14px 0;text-align:left;font-size:22px;line-height:1.35;">'
-      + '<span style="word-wrap:break-word;flex:1;">'+i.name+' &nbsp; x '+i.qty+'</span>'
-      + '<span style="white-space:nowrap;padding-left:8px;">Rs.'+(i.price*i.qty)+'</span>'
+    return '<div style="margin:8px 0;text-align:left;">'
+      + '<div style="font-size:14px;line-height:1.3;word-wrap:break-word;">'+i.name+'</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:14px;margin-top:2px;"><span>x '+i.qty+'</span><span>Rs.'+(i.price*i.qty)+'</span></div>'
       + '</div>';
   }).join('');
 
   var parcelHtml = b.parcelCharge
-    ? '<div style="display:flex;justify-content:space-between;font-size:22px;margin:14px 0;"><span>Parcel Charges</span><span>Rs.'+b.parcelCharge+'</span></div>'
+    ? '<div style="display:flex;justify-content:space-between;font-size:14px;margin:8px 0;"><span>Parcel Charges</span><span>Rs.'+b.parcelCharge+'</span></div>'
     : '';
 
-  return '<div style="width:54mm;margin:0 auto;text-align:center;font-family:monospace;color:#000;">'
-    + '<div style="font-size:22px;font-weight:900;letter-spacing:1px;">MS Emporium</div>'
-    + '<div style="font-size:22px;font-weight:900;margin-top:4px;">Ph: 7397468500</div>'
-    + '<hr style="border:none;border-top:1px dashed #000;margin:14px 0;">'
-    + '<div style="text-align:left;font-size:22px;line-height:1.7;">'
-    + '<div style="display:flex;justify-content:space-between;"><span>Bill</span><span>'+b.billNo+'</span></div>'
-    + '<div>Date : '+datePart+'</div>'
-    + '<div>Time : '+timePart+'</div>'
-    + '<div>Table Number :'+(b.tableNo||'-')+'</div>'
-    + '</div>'
-    + '<hr style="border:none;border-top:1px dashed #000;margin:14px 0;">'
+  return '<div style="width:48mm;margin:0 auto;text-align:center;font-family:monospace;color:#000;">'
+    + '<div style="font-size:17px;font-weight:900;letter-spacing:0.5px;">MS Emporium</div>'
+    + '<div style="font-size:14px;font-weight:900;margin-top:3px;">Ph: 7397468500</div>'
+    + '<hr style="border:none;border-top:1px dashed #000;margin:8px 0;">'
+    + '<table style="width:100%;font-size:13px;text-align:left;line-height:1.6;border-collapse:collapse;">'
+    + '<tr><td>Bill</td><td style="text-align:right;">'+b.billNo+'</td></tr>'
+    + '<tr><td>Date</td><td style="text-align:right;">'+datePart+'</td></tr>'
+    + '<tr><td>Time</td><td style="text-align:right;">'+timePart+'</td></tr>'
+    + '<tr><td>Table Number</td><td style="text-align:right;">'+(b.tableNo||'-')+'</td></tr>'
+    + '</table>'
+    + '<hr style="border:none;border-top:1px dashed #000;margin:8px 0;">'
     + itemsHtml + parcelHtml
-    + '<hr style="border:none;border-top:1px dashed #000;margin:14px 0;">'
-    + '<div style="display:flex;justify-content:space-between;font-size:22px;font-weight:900;margin-top:6px;"><span>Total</span><span>Rs.'+b.total+'</span></div>'
-    + '<div style="font-size:22px;margin-top:10px;">Thank You Visit Again</div>'
-    + '<div style="font-size:22px;letter-spacing:2px;">******</div>'
+    + '<hr style="border:none;border-top:1px dashed #000;margin:8px 0;">'
+    + '<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;"><span>Total</span><span>Rs.'+b.total+'</span></div>'
+    + '<div style="font-size:13px;margin-top:8px;">Thank You Visit Again</div>'
+    + '<div style="font-size:13px;letter-spacing:1px;">******</div>'
     + '</div>';
 }
