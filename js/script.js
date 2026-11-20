@@ -656,10 +656,11 @@ function savePreviewAsPDF(){
   }
   try{
     var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, 260]});
+   var itemsCount = (b.items||[]).length;
+   var pageHeight = 55 + (itemsCount * 13) + (b.parcelCharge ? 8 : 0);
     var W = 58, CX = 29, L = 2, R = 56;
     var y = 7;
-    function newPageIfNeeded(){ if(y > 188){ doc.addPage([58,200]); y = 7; } }
+    function newPageIfNeeded(){ if(y > pageHeight - 12){ doc.addPage([58, pageHeight]); y = 7; } }
     function dashed(){ doc.setFont('courier','bold'); doc.setFontSize(11); doc.text('------------------------------', CX, y, {align:'center'}); y += 5; newPageIfNeeded(); }
     function leftRight(left, right, size, bold){
       doc.setFont('courier', bold?'bold':'normal'); doc.setFontSize(size||12);
