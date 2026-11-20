@@ -667,7 +667,7 @@ var totalNameLines = 0;
   if(lines < 1) lines = 1;
   totalNameLines += lines;
 });
-var pageHeight = 70 + (totalNameLines * 10) + (itemsCount * 8) + (b.parcelCharge ? 10 : 0) + 30;
+var pageHeight = 60 + (totalNameLines * 9) + (itemsCount * 7) + (b.parcelCharge ? 10 : 0) + 18;
 // 70 = Header + Bill info, 30 = Total + Thank You ku space
 if(pageHeight < 100) pageHeight = 100;
 if(pageHeight > 400) pageHeight = 400;
@@ -722,8 +722,10 @@ leftRight('Table:', b.tableNo || '-', 14, false);
     // TOTAL - Preview maari perusa bold
     doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('TOTAL', L, y); doc.text('Rs.'+b.total, R, y, {align:'right'}); y += 8;
-    doc.setFont('courier','normal'); doc.setFontSize(13);
+    doc.setFont('courier','bold'); doc.setFontSize(11);
     doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 5;
+    doc.setFont('courier','normal'); doc.setFontSize(11);
+    doc.text('********************', CX, y, {align:'center'}); y += 5;
     var fileName = (b.billNo || 'BILL001') + '.pdf';
     try{
       var blob = doc.output('blob');
