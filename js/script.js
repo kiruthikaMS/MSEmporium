@@ -521,7 +521,7 @@ function downloadReport(){
     + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Qty</td>'
     + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Amount</td>'
     + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Total</td>'
-    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Cus Mob no</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Mob no</td>'
     + '</tr>';
 
   bills.forEach(function(b){
@@ -898,7 +898,7 @@ var payVal = payEl ? payEl.value : 'Cash';
   pendingPrintBill={id:Date.now(), billNo:bno, billDate:billDateInput, date:new Date().toLocaleString('en-IN'), tableNo:tno, items:JSON.parse(JSON.stringify(cart)), parcelCharge:parcel, total, count:cart.length, cusMob:mobVal, payMode:payVal};
   // PRINT PREVIEW POPUP - Print ku munnadi
   let pb=document.getElementById('previewBody');
- pb.innerHTML=`<div class="d-flex justify-content-between"><span>Bill No</span><b>${bno}</b></div><div class="d-flex justify-content-between"><span>Date</span><span>${pendingPrintBill.date}</span></div><div class="d-flex justify-content-between"><span>Table</span><b>${tno}</b></div><div class="d-flex justify-content-between"><span>Cus Mob No</span><b>${pendingPrintBill.cusMob}</b></div><div class="d-flex justify-content-between"><span>Payment Mode</span><b>${pendingPrintBill.payMode}</b></div><hr>${pendingPrintBill.items.map(i=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin:4px 0;text-align:left"><span style="font-weight:600;flex:1">${i.name==='Others' ? 'Others' : i.name + ' x ' + i.qty}</span><span style="white-space:nowrap;padding-left:4px">Rs.${i.price*i.qty}</span></div>`).join('')}${parcel?`<div class="d-flex justify-content-between"><span>Parcel Charges</span><span>Rs.${parcel}</span></div>`:''}<hr><div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>Rs.${total}</span></div>`;
+ pb.innerHTML=`<div class="d-flex justify-content-between"><span>Bill No</span><b>${bno}</b></div><div class="d-flex justify-content-between"><span>Date</span><span>${pendingPrintBill.date}</span></div><div class="d-flex justify-content-between"><span>Table</span><b>${tno}</b></div><div class="d-flex justify-content-between"><span>Mob No</span><b>${pendingPrintBill.cusMob}</b></div><div class="d-flex justify-content-between"><span>Payment Mode</span><b>${pendingPrintBill.payMode}</b></div><hr>${pendingPrintBill.items.map(i=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin:4px 0;text-align:left"><span style="font-weight:600;flex:1">${i.name==='Others' ? 'Others' : i.name + ' x ' + i.qty}</span><span style="white-space:nowrap;padding-left:4px">Rs.${i.price*i.qty}</span></div>`).join('')}${parcel?`<div class="d-flex justify-content-between"><span>Parcel Charges</span><span>Rs.${parcel}</span></div>`:''}<hr><div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>Rs.${total}</span></div>`;
   document.getElementById('previewModal').style.display='flex';
   return false;
 }
@@ -953,7 +953,7 @@ function buildReceiptHTML(b){
     + '<tr><td>Date</td><td style="text-align:right;">'+datePart+'</td></tr>'
     + '<tr><td>Time</td><td style="text-align:right;">'+timePart+'</td></tr>'
     + '<tr><td>Table Number</td><td style="text-align:right;">'+(b.tableNo||'-')+'</td></tr>'
-    + '<tr><td>Cus Mob No</td><td style="text-align:right;">'+(b.cusMob||'-')+'</td></tr>'
+    + '<tr><td>Mob No</td><td style="text-align:right;">'+(b.cusMob||'-')+'</td></tr>'
     + '<tr><td>Payment Mode</td><td style="text-align:right;">'+(b.payMode||'Cash')+'</td></tr>'
     + '</table>'
     + '<hr style="border:none;border-top:1px dashed #000;margin:8px 0;">'
