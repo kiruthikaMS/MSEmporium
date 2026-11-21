@@ -210,6 +210,18 @@ let products = [
 let bills=JSON.parse(localStorage.getItem('ms_bills')||'[]'), curPage=1, perPage=8, curCat='All', sText='', editingId=null;
 let currentTable=null; // 'T1'..'T5' - Paper Point 1
 let tableOrders={T1:[],T2:[],T3:[],T4:[],T5:[],T6:[],T7:[],T8:[],T9:[],T10:[]}; // 10 Tables - Per-table bill store
+let tableMobNos = JSON.parse(localStorage.getItem('ms_table_mobs')||'{}');
+let tablePayModes = JSON.parse(localStorage.getItem('ms_table_modes')||'{}');
+function saveMobForTable(val){
+  if(!currentTable) return;
+  tableMobNos[currentTable] = (val||'').trim();
+  localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos));
+}
+function saveModeForTable(val){
+  if(!currentTable) return;
+  tablePayModes[currentTable] = val;
+  localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes));
+}
 let parcelOrders={T1:0,T2:0,T3:0,T4:0,T5:0,T6:0,T7:0,T8:0,T9:0,T10:0}, parcelClicks={T1:0,T2:0,T3:0,T4:0,T5:0,T6:0,T7:0,T8:0,T9:0,T10:0};
 let pendingPrintBill=null;
 let cart=[]; // alias - always points to currentTable cart
@@ -223,10 +235,34 @@ if(bills.length===0 && Object.keys(tableBillNos).length===0){
   localStorage.setItem('ms_next_bill_seq', '0');
 }
 
+// ===== Pudhu Bill No Format - DDMM + 001 =====
+// Example: 26/11 -> 2611001, 27/11 -> 2711001
+function getBillPrefix(){
+  var n = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+  var dd = String(n.getDate()).padStart(2,'0'); // 26
+  var mm = String(n.getMonth()+1).padStart(2,'0'); // 11
+  return dd + mm; // 2611
+}
+function getTodayKey(){
+  var n = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); // 2026-11-26
+}
+function checkNewDayReset(){
+  var lastDate = localStorage.getItem('ms_bill_date_key') || '';
+  var todayKey = getTodayKey();
+  if(lastDate !== todayKey){
+    // Maru naal - Sequence thirumba 001 la irundhu
+    nextBillSeq = 0;
+    localStorage.setItem('ms_next_bill_seq','0');
+    localStorage.setItem('ms_table_bill_nos', JSON.stringify({})); tableBillNos = {};
+    localStorage.setItem('ms_bill_date_key', todayKey);
+  }
+}
 function getOrCreateBillNoForTable(t){
+  checkNewDayReset();
   if(!tableBillNos[t]){
     nextBillSeq += 1;
-    tableBillNos[t] = 'BILL'+String(nextBillSeq).padStart(3,'0');
+    tableBillNos[t] = getBillPrefix() + String(nextBillSeq).padStart(3,'0');
     localStorage.setItem('ms_table_bill_nos', JSON.stringify(tableBillNos));
     localStorage.setItem('ms_next_bill_seq', String(nextBillSeq));
   }
@@ -240,7 +276,8 @@ function clearBillNoForTable(t){
 }
 // Yaaru first print pannuraro avangalukku adutha number
 function getFinalPrintBillNo(){
-  return 'BILL' + String(bills.length + 1).padStart(3,'0');
+  checkNewDayReset();
+  return getBillPrefix() + String(bills.length + 1).padStart(3,'0');
 }
 
 function syncCart(){ if(currentTable) cart=tableOrders[currentTable]; else cart=[]; }
@@ -257,11 +294,14 @@ function getNowIST(){
 
 
 setInterval(()=>{ document.getElementById('dt').textContent=getNowIST(); let dh=document.getElementById('dtHome'); if(dh) dh.textContent=getNowIST(); },1000);
-function updateBillNo(){var n;
+  function updateBillNo()
+  {
+  checkNewDayReset();
+  var n;
   if(currentTable){
-    n = getOrCreateBillNoForTable(currentTable); // Global ah maathaadha
+    n = getOrCreateBillNoForTable(currentTable);
   } else {
-    n = 'BILL'+String(nextBillSeq+1).padStart(3,'0');
+    n = getBillPrefix() + String(nextBillSeq+1).padStart(3,'0'); // 2611001 ✅
   }
   document.getElementById('bno').textContent = n;
   document.getElementById('bnoHome').textContent = n;
@@ -270,7 +310,14 @@ function renderHomeTables(){ let el=document.getElementById('tablesHome'); if(!e
 function selectTable(t){ currentTable=t; 
   getOrCreateBillNoForTable(t); // Table ku Bill No lock pannu
   updateBillNo();
-  syncCart(); let tno=document.getElementById('tno'); if(tno)tno.value=tableLabel(t); let th=document.getElementById('tnoHome'); if(th)th.value=tableLabel(t); let b=document.getElementById('menuTableBadge'); if(b)b.textContent='Table: Table'+t.replace('T','')+' - '+tableLabel(t); renderHomeTables(); renderCart(); showPage('billing'); }
+  syncCart(); 
+  // Occupied Table na - Andha table oda Mobile + Mode kaatu
+var mobBox = document.getElementById('custMobHome');
+if(mobBox) mobBox.value = tableMobNos[t] || '';
+var modeVal = tablePayModes[t] || 'Cash';
+var modeRadio = document.querySelector('input[name="payModeHome"][value="'+modeVal+'"]');
+if(modeRadio) modeRadio.checked = true;
+  let tno=document.getElementById('tno'); if(tno)tno.value=tableLabel(t); let th=document.getElementById('tnoHome'); if(th)th.value=tableLabel(t); let b=document.getElementById('menuTableBadge'); if(b)b.textContent='Table: Table'+t.replace('T','')+' - '+tableLabel(t); renderHomeTables(); renderCart(); showPage('billing'); }
 function showHome(){ document.getElementById('homePage').classList.remove('d-none'); document.getElementById('billingPage').classList.add('d-none'); document.getElementById('savedPage').classList.add('d-none'); renderHomeTables(); renderCart(); }
 
 updateBillNo();
@@ -303,16 +350,49 @@ function addCart(id){
   let ex=cart.find(c=>c.id==id); if(ex) ex.qty++; else cart.push({id:prod.id, name:prod.name, price:parseFloat(prod.price), qty:1});
   renderCart();
 }
+
+// Others - Type panna amount-a cart la Others item-a serthu
+function setOthersAmt(val){
+  if(!currentTable){ alert('First Table select pannunga!'); return; }
+  var amt = parseFloat(val) || 0;
+  var ex = cart.find(c => c.name === 'Others');
+
+  if(amt <= 0){
+    // 0 / empty na Others-a delete pannidu
+    if(ex) cart.splice(cart.indexOf(ex), 1);
+  } else {
+    if(ex){ ex.price = amt; ex.qty = 1; } // Qty 1-a vechom, display la mattum blank kaatum
+    else { cart.push({id:9999, name:'Others', price:amt, qty:1}); }
+  }
+  renderCart();
+}
+
+function removeOthers(){
+  var ex = cart.find(c => c.name === 'Others');
+  if(ex) cart.splice(cart.indexOf(ex), 1);
+  renderCart();
+}
+
 function renderCart(){
   syncCart();
   let tot=cart.reduce((s,c)=>s+c.price*c.qty,0);
   let parcel=currentTable?parcelOrders[currentTable]:0; let clicks=currentTable?parcelClicks[currentTable]:0;
-  let rows = cart.length==0 ? '<tr><td colspan="5" class="text-center text-muted py-3">No items - Add from left</td></tr>' : cart.map((c,i)=>{ return `<tr><td>${i+1}</td><td>${c.name}</td><td><button class="btn btn-sm border py-0 px-1" onclick="chg(${i},-1)">-</button> ${c.qty} <button class="btn btn-sm border py-0 px-1" onclick="chg(${i},1)">+</button></td><td>Rs.${c.price*c.qty}</td><td><span class="text-danger" style="cursor:pointer" onclick="rem(${i})"><i class="bi bi-x-circle"></i></span></td></tr>`; }).join('');
+ let rows = cart.length==0 ? '<tr><td colspan="5" class="text-center text-muted py-3">No items - Add from left</td></tr>' : cart.map((c,i)=>{
+  // Others na Qty blank, + / - vendaam
+  if(c.name === 'Others'){
+    return `<tr><td>${i+1}</td><td>Others</td><td></td><td>Rs.${c.price}</td><td><span class="text-danger" style="cursor:pointer" onclick="rem(${i})"><i class="bi bi-x-circle"></i></span></td></tr>`;
+  }
+  return `<tr><td>${i+1}</td><td>${c.name}</td><td><button class="btn btn-sm border py-0 px-1" onclick="chg(${i},-1)">-</button> ${c.qty} <button class="btn btn-sm border py-0 px-1" onclick="chg(${i},1)">+</button></td><td>Rs.${c.price*c.qty}</td><td><span class="text-danger" style="cursor:pointer" onclick="rem(${i})"><i class="bi bi-x-circle"></i></span></td></tr>`;
+}).join('');
   if(parcel>0) rows += `<tr><td></td><td>Parcel Charges</td><td></td><td>Rs.${parcel}</td><td></td></tr>`;
   ['cartBody','cartBodyHome'].forEach(id=>{ let b=document.getElementById(id); if(b) b.innerHTML=rows; });
   ['gt','gtHome'].forEach(id=>{ let e=document.getElementById(id); if(e) e.textContent='Rs. '+(tot+parcel); });
   ['parcelAmt','parcelAmtHome'].forEach(id=>{ let e=document.getElementById(id); if(e) e.textContent=parcel; });
   ['parcelInfo','parcelInfoHome'].forEach(id=>{ let e=document.getElementById(id); if(e) e.textContent=clicks+' clicks'; });
+  // Others box value-a cart ku sync pannu
+var othersItem = cart.find(c => c.name === 'Others');
+var othersVal = othersItem ? othersItem.price : '';
+['othersAmt','othersAmtHome'].forEach(id=>{ var el=document.getElementById(id); if(el && document.activeElement !== el) el.value = othersVal; });
   renderHomeTables();
 }
 function chg(i,d){ cart[i].qty+=d; if(cart[i].qty<=0) cart.splice(i,1); renderCart(); }
@@ -391,10 +471,13 @@ function renderSaved(){
   document.getElementById('cnt').textContent=bills.length;
   document.getElementById('cnt2').textContent=bills.length;
   let body=document.getElementById('savedBody');
-  if(bills.length==0){ body.innerHTML='<tr><td colspan="5" class="text-center text-muted py-3">No bills yet</td></tr>'; return; }
-  // FIXED: use count, not undefined, handle both count and itemsCount
-  body.innerHTML=bills.map(b=>{ let itemCount = b.count || b.itemsCount || b.items?.length || 0; return `<tr><td>${b.billNo}</td><td>${b.date}</td><td>${b.tableNo}</td><td>${itemCount} items</td><td>Rs.${b.total}</td></tr>`; }).join('');
+  if(bills.length==0){ body.innerHTML='<tr><td colspan="7" class="text-center text-muted py-3">No bills yet</td></tr>'; return; }
+  body.innerHTML=bills.map(b=>{ 
+    let itemCount = b.count || b.itemsCount || b.items?.length || 0; 
+    return `<tr><td>${b.billNo}</td><td>${b.date}</td><td>${b.tableNo}</td><td>${itemCount} items</td><td>Rs.${b.total}</td><td>${b.cusMob || '-'}</td><td>${b.payMode || 'Cash'}</td></tr>`; 
+  }).join('');
 }
+
 function viewB(id){
   let b=bills.find(x=>x.id==id);
   document.getElementById('rec').innerHTML=`<div class="text-center fw-bold">MS Emporium</div><div class="text-center small">Juices & Snacks</div><hr><div class="d-flex justify-content-between"><span>Bill No:</span><span>${b.billNo}</span></div><div class="d-flex justify-content-between"><span>Date:</span><span>${b.date}</span></div><div class="d-flex justify-content-between"><span>Table No:</span><span>${b.tableNo}</span></div><hr>${b.items.map(i=>`<div class="d-flex justify-content-between"><span>${i.name}</span><span>${i.qty} Rs.${i.price*i.qty}</span></div>`).join('')}<hr><div class="d-flex justify-content-between fw-bold"><span>Total (${b.count||b.itemsCount||0} items)</span><span>Rs.${b.total}</span></div><div class="text-center mt-3 small">Thank you! Visit again<br>MS Emporium</div>`;
@@ -415,75 +498,85 @@ function delB(id){ if(confirm('Delete this bill?')){ bills=bills.filter(b=>b.id!
 function showPage(p){ document.getElementById('homePage').classList.toggle('d-none', true); document.getElementById('billingPage').classList.toggle('d-none', p!='billing'); document.getElementById('savedPage').classList.toggle('d-none', p!='saved'); if(p=='saved') renderSaved(); if(p=='billing' && !currentTable){ /* Menu ku Table thevai - Home ku anuppu */ } }
 
 function downloadReport(){
+
   if(bills.length==0){ alert('No bills'); return; }
 
-  var todayStr = new Date().toLocaleDateString('en-IN').replace(/\//g,'.'); // 19.11.2026
+  var todayStr = new Date().toLocaleDateString('en-IN').replace(/\//g,'.'); // 21.11.2026
   var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>MS Emporium Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
-  html += '<table border="0" cellpadding="5" cellspacing="0" style="font-family:Calibri;font-size:11pt;">';
+  html += '<table border="1" cellpadding="5" cellspacing="0" style="font-family:Calibri;font-size:11pt;border-collapse:collapse;">';
 
-  // Row 1 - Title - Screenshot maariye
-  html += '<tr><td colspan="6" style="font-weight:bold;font-size:12pt;text-align:center;">MS Emporium - Juices &amp; Snacks</td></tr>';
+  // Row 1 - Title - Photo mariye
+  html += '<tr><td colspan="8" style="font-weight:bold;font-size:12pt;text-align:center;">MS Emporium - Juices &amp; Snacks</td></tr>';
   // Row 2 - Date
-  html += '<tr><td colspan="6" style="font-weight:bold;text-align:center;">Date - '+todayStr+'</td></tr>';
+  html += '<tr><td colspan="8" style="font-weight:bold;text-align:center;">Date - '+todayStr+'</td></tr>';
   // Row 3 - Blank
-  html += '<tr><td colspan="6">&nbsp;</td></tr>';
-  // Row 4 - Header - Green + Bold - Screenshot maariye
+  html += '<tr><td colspan="8">&nbsp;</td></tr>';
+
+  // Row 4 - Header - Photo mariye Green
   html += '<tr>'
-    + '<td style="font-weight:bold;color:#1F7A33;border-bottom:1px solid #999;">Bill No</td>'
-    + '<td style="font-weight:bold;color:#1F7A33;border-bottom:1px solid #999;">Date/Time</td>'
-    + '<td style="font-weight:bold;color:#1F7A33;text-align:center;border-bottom:1px solid #999;">Table No</td>'
-    + '<td style="font-weight:bold;color:#1F7A33;text-align:center;border-bottom:1px solid #999;">Item</td>'
-    + '<td style="font-weight:bold;color:#1F7A33;text-align:center;border-bottom:1px solid #999;">Qty</td>'
-    + '<td style="font-weight:bold;color:#1F7A33;text-align:center;border-bottom:1px solid #999;">Amount</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Bill No</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Date/Time</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Table No</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Item</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Qty</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Amount</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Total</td>'
+    + '<td style="font-weight:bold;background:#C6EFCE;text-align:center;">Cus Mob no</td>'
     + '</tr>';
 
   bills.forEach(function(b){
-    (b.items||[]).forEach(function(i, idx){
+    var items = b.items || [];
+    items.forEach(function(i, idx){
+      var isLast = (idx === items.length - 1);
+      // Others na Qty blank
+      var qtyShow = (i.name === 'Others' ? '' : i.qty);
       html += '<tr>'
-        + '<td>'+(idx===0 ? b.billNo : '')+'</td>'
-        + '<td>'+(idx===0 ? b.date : '')+'</td>'
-        + '<td style="text-align:center;">'+(idx===0 ? b.tableNo : '')+'</td>'
-        + '<td>'+i.name+'</td>'
-        + '<td style="text-align:center;">'+i.qty+'</td>'
-        + '<td style="text-align:center;">'+(i.price*i.qty)+'</td>'
+        + '<td style="text-align:center;">' + b.billNo + '</td>'
+        + '<td style="text-align:center;">' + b.date + '</td>'
+        + '<td style="text-align:center;">' + b.tableNo + '</td>'
+        + '<td style="text-align:center;">' + i.name + '</td>'
+        + '<td style="text-align:center;">' + qtyShow + '</td>'
+        + '<td style="text-align:center;">' + (i.price * i.qty) + '</td>'
+        // Total + Mob No - Kadasi line la mattum
+        + '<td style="font-weight:bold;text-align:center;">' + (isLast ? b.total : '') + '</td>'
+        + '<td style="font-weight:bold;text-align:center;">' + (isLast ? (b.cusMob || '') : '') + '</td>'
         + '</tr>';
     });
+    // Parcel irundha - Kadasi line ku munnadi
     if(b.parcelCharge){
-      html += '<tr><td></td><td></td><td></td><td>Parcel Charges</td><td style="text-align:center;">1</td><td style="text-align:center;">'+b.parcelCharge+'</td></tr>';
+      html += '<tr>'
+        + '<td style="text-align:center;">' + b.billNo + '</td>'
+        + '<td style="text-align:center;">' + b.date + '</td>'
+        + '<td style="text-align:center;">' + b.tableNo + '</td>'
+        + '<td style="text-align:center;">Parcel Charges</td>'
+        + '<td style="text-align:center;"></td>'
+        + '<td style="text-align:center;">' + b.parcelCharge + '</td>'
+        + '<td style="text-align:center;"></td>'
+        + '<td style="text-align:center;"></td>'
+        + '</tr>';
     }
-    // Total Row - Screenshot maariye
-    html += '<tr>'
-      + '<td style="border-bottom:1px solid #999;">&nbsp;</td>'
-      + '<td style="border-bottom:1px solid #999;">&nbsp;</td>'
-      + '<td style="border-bottom:1px solid #999;">&nbsp;</td>'
-      + '<td style="border-bottom:1px solid #999;">&nbsp;</td>'
-      + '<td style="font-weight:bold;text-align:center;border-bottom:1px solid #999;">Total</td>'
-      + '<td style="font-weight:bold;text-align:center;border-bottom:1px solid #999;">'+b.total+'</td>'
-      + '</tr>';
-    // Blank separator row - Screenshot la BILL001 ku keezha irukura gap
-    html += '<tr><td colspan="6" style="border-bottom:1px solid #999;">&nbsp;</td></tr>';
   });
 
   html += '</table></body></html>';
 
   var blob = new Blob([html], {type:'application/vnd.ms-excel;charset=utf-8;'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'MS_Emporium_Report_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.xls';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-
-  // Download aana apram Saved Bills clear
-  setTimeout(function(){
-    if(confirm('Report Downloaded')){
-      bills = [];
-      localStorage.setItem('ms_bills', JSON.stringify(bills));
-      localStorage.setItem('ms_next_bill_seq','0'); nextBillSeq = 0;
-      localStorage.setItem('ms_table_bill_nos', JSON.stringify({})); tableBillNos = {};
-      renderSaved(); updateBillNo();
-      alert('Saved Bills Cleared! Next Bill Again Starts From BILL001.');
-    }
-  }, 500);
+var a = document.createElement('a');
+a.href = URL.createObjectURL(blob);
+a.download = 'MS_Emporium_Report_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.xls';
+document.body.appendChild(a); a.click(); document.body.removeChild(a);
+// Download mattum - Saved Bills clear aagadhu ✅
 }
+// Mob + Mode - Type panna odane indha table ku auto-save
+document.addEventListener('DOMContentLoaded', function(){
+  var mobBox = document.getElementById('custMobHome');
+  if(mobBox){
+    mobBox.addEventListener('input', function(){ saveMobForTable(this.value); });
+  }
+  document.querySelectorAll('input[name="payModeHome"]').forEach(function(r){
+    r.addEventListener('change', function(){ saveModeForTable(this.value); });
+  });
+});
+
 renderCats(); renderGrid(); renderSaved(); renderHomeTables(); showHome(); 
 let _bd=document.getElementById('billDate'); if(_bd && !_bd.value) _bd.value=getTodayIST(); let _bdh=document.getElementById('billDateHome'); if(_bdh && !_bdh.value) _bdh.value=getTodayIST();
  setInterval(()=>{ let d=document.getElementById('dt'); if(d) d.textContent=new Date().toLocaleString('en-IN'); let dh=document.getElementById('dtHome'); if(dh) dh.textContent=new Date().toLocaleString('en-IN'); },1000);
@@ -571,7 +664,7 @@ function clearBills(){
   localStorage.setItem('ms_bills', JSON.stringify(bills));
 
   // 2. Bill No-vum BILL001 la irundhu thirumba start aagum
-  localStorage.setItem('ms_next_bill_seq','0');
+  localStorage.setItem('ms_next_bill_seq','0');localStorage.setItem('ms_bill_date_key', getTodayKey());
   nextBillSeq = 0;
   localStorage.setItem('ms_table_bill_nos', JSON.stringify({}));
   tableBillNos = {};
@@ -756,6 +849,7 @@ function confirmPrintAfterPDF(){
   document.getElementById('previewModal').style.display='none';
   bills.push(b); localStorage.setItem('ms_bills', JSON.stringify(bills));
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
+  if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
   var sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' PDF Saved! Print the File....'; sm.style.display='block'; setTimeout(()=>sm.style.display='none',5000); }
 }
@@ -764,19 +858,43 @@ function confirmPrintAfterPDF(){
 function saveAndPrint(){
   if(!currentTable){ alert('Please Select Table!'); showHome(); return false; }
   if(cart.length==0){ alert('Add items first!'); return false; }
+// 1. Mobile Number Check - Illana Save aagadhu
+  var mobInput = document.getElementById('custMobHome');
+  var mob = mobInput ? mobInput.value.trim() : '';
+  if(mob=='' || mob.length != 10 || isNaN(mob)){
+    alert('Please Enter Customer Mobile Number');
+    if(mobInput) mobInput.focus();
+    return false;
+  }
+
+  // 2. Payment Mode eduthuko - Cash / UPI / Cards
+  var payMode = 'Cash';
+  var checked = document.querySelector('input[name="payModeHome"]:checked');
+  if(checked) payMode = checked.value;
  // Table Number - 3 edathula irundhu edukkum - undefined varathu!
 let tnoInput = document.getElementById('tno')?.value || document.getElementById('tnoHome')?.value || '';
 let tno = tnoInput || tableLabel(currentTable) || '-';
-if(tno==='-' || !tno){ alert('Table select pannunga! Home la Table 1 click pannunga'); showHome(); return false; }
+if(tno==='-' || !tno){ alert('Select Table'); showHome(); return false; }
 let billDateEl=document.getElementById('billDate');
   let billDateInput=billDateEl?billDateEl.value:'';
   if(!billDateInput){ alert('Select Bill Date'); return false; }
   let parcel=parcelOrders[currentTable]||0; let total=cart.reduce((s,c)=>s+c.price*c.qty,0)+parcel;
   let bno = getFinalPrintBillNo(); // ✅ Print = Final, bills.length + 1
-  pendingPrintBill={id:Date.now(), billNo:bno, billDate:billDateInput, date:getNowIST(), tableNo:tno, items:JSON.parse(JSON.stringify(cart)), parcelCharge:parcel, total, count:cart.length};
+
+  // Mobile + Payment Mode eduthuko - Idhu illana undefined varum
+var mobEl = document.getElementById('custMobHome');
+var mobVal = mobEl ? mobEl.value.trim() : '';
+if(mobVal=='' || mobVal.length != 10){
+  alert('Customer Mobile Number enter pannunga! 10 digit venum.');
+  if(mobEl) mobEl.focus();
+  return false;
+}
+var payEl = document.querySelector('input[name="payModeHome"]:checked');
+var payVal = payEl ? payEl.value : 'Cash';
+  pendingPrintBill={id:Date.now(), billNo:bno, billDate:billDateInput, date:new Date().toLocaleString('en-IN'), tableNo:tno, items:JSON.parse(JSON.stringify(cart)), parcelCharge:parcel, total, count:cart.length, cusMob:mobVal, payMode:payVal};
   // PRINT PREVIEW POPUP - Print ku munnadi
   let pb=document.getElementById('previewBody');
-  pb.innerHTML=`<div class="d-flex justify-content-between"><span>Bill No</span><b>${bno}</b></div><div class="d-flex justify-content-between"><span>Date</span><span>${pendingPrintBill.date}</span></div><div class="d-flex justify-content-between"><span>Table</span><b>${tno}</b></div><hr>${pendingPrintBill.items.map(i=>`<div class="d-flex justify-content-between"><span>${i.name} x ${i.qty}</span><span>Rs.${i.price*i.qty}</span></div>`).join('')}${parcel?`<div class="d-flex justify-content-between"><span>Parcel Charges</span><span>Rs.${parcel}</span></div>`:''}<hr><div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>Rs.${total}</span></div>`;
+ pb.innerHTML=`<div class="d-flex justify-content-between"><span>Bill No</span><b>${bno}</b></div><div class="d-flex justify-content-between"><span>Date</span><span>${pendingPrintBill.date}</span></div><div class="d-flex justify-content-between"><span>Table</span><b>${tno}</b></div><div class="d-flex justify-content-between"><span>Cus Mob No</span><b>${pendingPrintBill.cusMob}</b></div><div class="d-flex justify-content-between"><span>Payment Mode</span><b>${pendingPrintBill.payMode}</b></div><hr>${pendingPrintBill.items.map(i=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin:4px 0;text-align:left"><span style="font-weight:600;flex:1">${i.name==='Others' ? 'Others' : i.name + ' x ' + i.qty}</span><span style="white-space:nowrap;padding-left:4px">Rs.${i.price*i.qty}</span></div>`).join('')}${parcel?`<div class="d-flex justify-content-between"><span>Parcel Charges</span><span>Rs.${parcel}</span></div>`:''}<hr><div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>Rs.${total}</span></div>`;
   document.getElementById('previewModal').style.display='flex';
   return false;
 }
@@ -793,6 +911,7 @@ function confirmPrint(){
     w.document.close();
   }
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
+  if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
   let sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' Saved & Print aachu! Table: '+b.tableNo; sm.style.display='block'; setTimeout(()=>sm.style.display='none',4000); }
 }
@@ -823,13 +942,15 @@ function buildReceiptHTML(b){
 
   return '<div style="width:48mm;margin:0 auto;text-align:center;font-family:monospace;color:#000;">'
     + '<div style="font-size:17px;font-weight:900;letter-spacing:0.5px;">MS Emporium</div>'
-    + '<div style="font-size:14px;font-weight:900;margin-top:3px;">Ph: 7397468500</div>'
+    + '<div style="font-size:14px;font-weight:900;margin-top:3px;">Juices And Snacks</div>'
     + '<hr style="border:none;border-top:1px dashed #000;margin:8px 0;">'
     + '<table style="width:100%;font-size:13px;text-align:left;line-height:1.6;border-collapse:collapse;">'
     + '<tr><td>Bill</td><td style="text-align:right;">'+b.billNo+'</td></tr>'
     + '<tr><td>Date</td><td style="text-align:right;">'+datePart+'</td></tr>'
     + '<tr><td>Time</td><td style="text-align:right;">'+timePart+'</td></tr>'
     + '<tr><td>Table Number</td><td style="text-align:right;">'+(b.tableNo||'-')+'</td></tr>'
+    + '<tr><td>Cus Mob No</td><td style="text-align:right;">'+(b.cusMob||'-')+'</td></tr>'
+    + '<tr><td>Payment Mode</td><td style="text-align:right;">'+(b.payMode||'Cash')+'</td></tr>'
     + '</table>'
     + '<hr style="border:none;border-top:1px dashed #000;margin:8px 0;">'
     + itemsHtml + parcelHtml
