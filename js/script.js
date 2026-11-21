@@ -707,7 +707,7 @@ function getBillTextForPDF(b){
   lines.push('Bill: ' + b.billNo);
   lines.push('Date: ' + (b.date || b.billDate || ''));
   lines.push('Table: ' + (b.tableNo || '-'));
-  lines.push('Cus Mob No: ' + (b.cusMob || '-'));
+  lines.push('Mob No: ' + (b.cusMob || '-'));
   lines.push('Payment Mode: ' + (b.payMode || 'Cash'));
   lines.push('------------------------------');
   b.items.forEach(function(i){
@@ -801,7 +801,7 @@ leftRight('Bill:', b.billNo, 14, false);
 leftRight('Date:', datePart, 14, false);
 leftRight('Time:', timePart, 14, false);
 leftRight('Table:', b.tableNo || '-', 14, false);
-leftRight('Cus Mob No:', b.cusMob || '-', 14, false);
+leftRight('Mob No:', b.cusMob || '-', 14, false);
 leftRight('Payment Mode:', b.payMode || 'Cash', 14, false);
     dashed();
     // Items - Preview maari: Name full line, aprom x Qty left / Price right
@@ -820,9 +820,9 @@ leftRight('Payment Mode:', b.payMode || 'Cash', 14, false);
     doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('TOTAL', L, y); doc.text('Rs.'+b.total, R, y, {align:'right'}); y += 8;
     doc.setFont('courier','bold'); doc.setFontSize(11);
-    doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 5;
+    doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 7;
     doc.setFont('courier','normal'); doc.setFontSize(11);
-    doc.text('********************', CX, y, {align:'center'}); y += 5;
+    doc.text('********************', CX, y, {align:'center'}); y += 7;
     var fileName = (b.billNo || 'BILL001') + '.pdf';
     try{
       var blob = doc.output('blob');
