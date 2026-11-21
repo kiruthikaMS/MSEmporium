@@ -702,11 +702,13 @@ function handlePrint(){
 function getBillTextForPDF(b){
   var lines = [];
   lines.push('MS EMPORIUM');
-  lines.push('Ph: 7397468500');
+  lines.push('Juices & Snacks');
   lines.push('------------------------------');
   lines.push('Bill: ' + b.billNo);
   lines.push('Date: ' + (b.date || b.billDate || ''));
   lines.push('Table: ' + (b.tableNo || '-'));
+  lines.push('Cus Mob No: ' + (b.cusMob || '-'));
+  lines.push('Payment Mode: ' + (b.payMode || 'Cash'));
   lines.push('------------------------------');
   b.items.forEach(function(i){
     lines.push(i.name + ' x ' + i.qty);
@@ -760,7 +762,7 @@ var totalNameLines = 0;
   if(lines < 1) lines = 1;
   totalNameLines += lines;
 });
-var pageHeight = 60 + (totalNameLines * 9) + (itemsCount * 7) + (b.parcelCharge ? 10 : 0) + 18;
+var pageHeight = 72 + (totalNameLines * 9) + (itemsCount * 7) + (b.parcelCharge ? 10 : 0) + 18;
 // 70 = Header + Bill info, 30 = Total + Thank You ku space
 if(pageHeight < 100) pageHeight = 100;
 if(pageHeight > 400) pageHeight = 400;
@@ -781,7 +783,7 @@ if(pageHeight > 400) pageHeight = 400;
     doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('MS EMPORIUM', CX, y, {align:'center'}); y += 6;
     doc.setFont('courier','bold'); doc.setFontSize(15);
-    doc.text('Ph: 7397468500', CX, y, {align:'center'}); y += 4;
+    doc.text('Juices & Snacks', CX, y, {align:'center'}); y += 4;
     dashed();
     // Bill info - Preview la vara maari Left label / Right value
     var datePart = '', timePart = '';
@@ -799,6 +801,8 @@ leftRight('Bill:', b.billNo, 14, false);
 leftRight('Date:', datePart, 14, false);
 leftRight('Time:', timePart, 14, false);
 leftRight('Table:', b.tableNo || '-', 14, false);
+leftRight('Cus Mob No:', b.cusMob || '-', 14, false);
+leftRight('Payment Mode:', b.payMode || 'Cash', 14, false);
     dashed();
     // Items - Preview maari: Name full line, aprom x Qty left / Price right
     b.items.forEach(function(i){
