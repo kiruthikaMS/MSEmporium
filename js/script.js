@@ -212,6 +212,9 @@ let currentTable=null; // 'T1'..'T5' - Paper Point 1
 let tableOrders={T1:[],T2:[],T3:[],T4:[],T5:[],T6:[],T7:[],T8:[],T9:[],T10:[]}; // 10 Tables - Per-table bill store
 let tableMobNos = JSON.parse(localStorage.getItem('ms_table_mobs')||'{}');
 let tablePayModes = JSON.parse(localStorage.getItem('ms_table_modes')||'{}');
+// ✅ Clear Panna Table-a - Sync la Thirumba Vara Vidama Thadukka
+var clearedTablesAt = {};
+try{ clearedTablesAt = JSON.parse(localStorage.getItem('ms_cleared_tables')||'{}'); }catch(e){ clearedTablesAt = {}; }
 function saveMobForTable(val){
   if(!currentTable) return;
   tableMobNos[currentTable] = (val||'').trim();
@@ -306,7 +309,8 @@ setInterval(()=>{ document.getElementById('dt').textContent=getNowIST(); let dh=
   document.getElementById('bno').textContent = n;
   document.getElementById('bnoHome').textContent = n;
 }
-function renderHomeTables(){ let el=document.getElementById('tablesHome'); if(!el) return; el.innerHTML=['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10'].map(t=>{ let items=tableOrders[t]; let cnt=items.reduce((s,x)=>s+x.qty,0); let tot=items.reduce((s,x)=>s+x.qty*x.price,0)+(parcelOrders[t]||0); return `<div class="col-3 col-md-3"><div class="product-box" style="height:96px !important;min-height:96px;padding:8px !important;cursor:pointer;${currentTable===t?'border:2px solid #16a34a !important;background:#f0fdf4':''}" onclick="selectTable('${t}')"><div style="font-size:16px;font-weight:800;">Table ${t.replace('T','')}</div><div style="font-size:11px;color:#666;"></div><div><span class="badge ${cnt?'bg-success':'bg-secondary'}" style="font-size:20px;">${cnt?'Occupied':'Free'}</span></div></div></div>`; }).join(''); }
+function renderHomeTables(){ let el=document.getElementById('tablesHome'); if(!el) return; el.innerHTML=['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10'].map(t=>{ let items=tableOrders[t]; let cnt=items.reduce((s,x)=>s+x.qty,0); let tot=items.reduce((s,x)=>s+x.qty*x.price,0)+(parcelOrders[t]||0); return `<div class="col-3 col-md-3"><div class="product-box" style="height:96px !important;min-height:96px;padding:8px !important;cursor:pointer;${currentTable===t?'border:2px solid #16a34a !important;background:#f0fdf4':''}"onclick="selectTable('${t}')"><div style="font-size:16px;font-weight:800;">Table ${t.replace('T','')}</div><div style="font-size:11px;color:#666;"></div><div><span class="badge ${cnt?'bg-success':'bg-secondary'}" style="font-size:20px;">${cnt?'Occupied':'Free'}</span></div></div></div>`; }).join(''); }
+
 function selectTable(t){ currentTable=t; 
   getOrCreateBillNoForTable(t); // Table ku Bill No lock pannu
   updateBillNo();
@@ -654,39 +658,6 @@ function closeBillModal(){
   document.getElementById('billModal').style.display='none';
 }
 
-// ===== Clear Bills Button - Download Report pakkathula =====
-function clearBills(){
-  if(bills.length===0){ alert('Clear panna bill ye illa!'); return; }
-
-  if(!confirm('⚠️ ' + bills.length + 'Clear All')){
-    return;
-  }
-
-  // 1. Bills ellam clear
-  bills = [];
-  localStorage.setItem('ms_bills', JSON.stringify(bills));
-
-  // 2. Bill No-vum BILL001 la irundhu thirumba start aagum
-  localStorage.setItem('ms_next_bill_seq','0');localStorage.setItem('ms_bill_date_key', getTodayKey());
-  nextBillSeq = 0;
-  localStorage.setItem('ms_table_bill_nos', JSON.stringify({}));
-  tableBillNos = {};
-
-  // 3. Table Orders-um clear
-  tableOrders = {T1:[],T2:[],T3:[],T4:[],T5:[],T6:[],T7:[],T8:[],T9:[],T10:[]};
-  parcelOrders = {T1:0,T2:0,T3:0,T4:0,T5:0,T6:0,T7:0,T8:0,T9:0,T10:0};
-  parcelClicks = {T1:0,T2:0,T3:0,T4:0,T5:0,T6:0,T7:0,T8:0,T9:0,T10:0};
-  cart = [];
-  currentTable = null;
-
-  // 4. Screen-a update pannu
-  renderSaved();
-  updateBillNo();
-  renderCart();
-  renderHomeTables();
-
-  alert('✅ Clear Saved Bills');
-}
 
 function handlePrint(){
   var billEl = document.getElementById('rec');
@@ -855,18 +826,23 @@ function confirmPrintAfterPDF(){
   var b = pendingPrintBill;
   document.getElementById('previewModal').style.display='none';
   bills.push(b); localStorage.setItem('ms_bills', JSON.stringify(bills));
+    // ✅ Clear Panna Time-a Mark pannu - Sync la Pazhaya Order Vandhalum Ignore pannum!
+  if(currentTable){ clearedTablesAt[currentTable] = Date.now(); localStorage.setItem('ms_cleared_tables', JSON.stringify(clearedTablesAt)); }
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
-  if(typeof syncPushOrder === 'function') syncPushOrder(); 
+if(typeof tableMobNos !== 'undefined' && currentTable){ delete tableMobNos[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); }
+if(typeof tablePayModes !== 'undefined' && currentTable){ delete tablePayModes[currentTable]; localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
+  
+  forceClearTableInSheet();
   if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
-  // ✅ Idha add pannu!
-var mobBox3 = document.getElementById('custMobHome');
-if(mobBox3) mobBox3.value = '';
-var cashRadio2 = document.querySelector('input[name="payModeHome"][value="Cash"]');
-if(cashRadio2) cashRadio2.checked = true;
-var othersBox2 = document.getElementById('othersAmtHome');
-if(othersBox2) othersBox2.value = '';
+  
+  pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome(); renderHomeTables(); 
 
-  pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
+// ✅ COMPLETE Clear - Box Ellame Empty!
+var mb2 = document.getElementById('custMobHome'); if(mb2) mb2.value = '';
+var cash2 = document.querySelector('input[name="payModeHome"][value="Cash"]'); if(cash2) cash2.checked = true;
+var ob2 = document.getElementById('othersAmtHome'); if(ob2) ob2.value = '';
+var cb2 = document.getElementById('cartBodyHome'); if(cb2) cb2.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No items - Add from left</td></tr>';
+var gt2 = document.getElementById('gtHome'); if(gt2) gt2.textContent = 'Rs. 0';
   var sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' PDF Saved! Print the File....'; sm.style.display='block'; setTimeout(()=>sm.style.display='none',5000); }
 }
  
@@ -926,18 +902,22 @@ function confirmPrint(){
       + '<script>setTimeout(function(){ window.print(); }, 800);<\/script></body></html>');
     w.document.close();
   }
+  // ✅ Clear Panna Time-a Mark pannu - Sync la Pazhaya Order Vandhalum Ignore pannum!
+if(currentTable){ clearedTablesAt[currentTable] = Date.now(); localStorage.setItem('ms_cleared_tables', JSON.stringify(clearedTablesAt)); }
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
-  if(typeof syncPushOrder === 'function') syncPushOrder(); 
+if(typeof tableMobNos !== 'undefined' && currentTable){ delete tableMobNos[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); }
+if(typeof tablePayModes !== 'undefined' && currentTable){ delete tablePayModes[currentTable]; localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
+forceClearTableInSheet();
   if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
-  // ✅ Idha add pannu - Screen layum clear aaganum!
-var mobBox2 = document.getElementById('custMobHome');
-if(mobBox2) mobBox2.value = '';
-var cashRadio = document.querySelector('input[name="payModeHome"][value="Cash"]');
-if(cashRadio) cashRadio.checked = true;
-var othersBox = document.getElementById('othersAmtHome');
-if(othersBox) othersBox.value = '';
   
-  pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
+  
+  pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome(); renderHomeTables(); 
+  // ✅ COMPLETE Clear - Box Ellame Empty!
+var mb2 = document.getElementById('custMobHome'); if(mb2) mb2.value = '';
+var cash2 = document.querySelector('input[name="payModeHome"][value="Cash"]'); if(cash2) cash2.checked = true;
+var ob2 = document.getElementById('othersAmtHome'); if(ob2) ob2.value = '';
+var cb2 = document.getElementById('cartBodyHome'); if(cb2) cb2.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No items - Add from left</td></tr>';
+var gt2 = document.getElementById('gtHome'); if(gt2) gt2.textContent = 'Rs. 0';
   let sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' Saved & Print aachu! Table: '+b.tableNo; sm.style.display='block'; setTimeout(()=>sm.style.display='none',4000); }
 }
 function buildReceiptHTML(b){
@@ -984,4 +964,23 @@ function buildReceiptHTML(b){
     + '<div style="font-size:13px;margin-top:8px;">Thank You Visit Again</div>'
     + '<div style="font-size:13px;letter-spacing:1px;">******</div>'
     + '</div>';
+}
+
+// ✅ Save & Print mudinjadhum - Sheet la Indha Table Row-a Delete Pannu
+function forceClearTableInSheet(){
+  if(!currentTable) return;
+  var t = currentTable;
+  var url = (typeof SYNC_URL !== 'undefined' && SYNC_URL) ? SYNC_URL : ((typeof REPORT_MAIL_URL !== 'undefined' && REPORT_MAIL_URL) ? REPORT_MAIL_URL : (window.SYNC_URL || ''));
+if(!url){ alert('SYNC_URL illa! Sheet Clear aagadhu! index.html la SYNC_URL check pannunga!'); return; }
+  // Table Label - T1 / T2
+  var label = (typeof tableLabel === 'function') ? tableLabel(t) : t;
+  var fr = document.getElementById('syncFrameHidden');
+  if(!fr){ fr = document.createElement('iframe'); fr.id='syncFrameHidden'; fr.name='syncFrameHidden'; fr.style.display='none'; document.body.appendChild(fr); }
+  var f = document.createElement('form');
+  f.method='POST'; f.action=url; f.target='syncFrameHidden'; f.style.display='none';
+  var inp=document.createElement('input'); inp.name='syncOrder';
+  // ✅ Items: [] - Idha Paatha Apps Script Row-a Delete Pannidum!
+  inp.value=JSON.stringify({tableNo: label, items:[], total:0, cusMob:'', payMode:'Cash'});
+  f.appendChild(inp); document.body.appendChild(f); f.submit();
+  setTimeout(function(){ f.remove(); }, 2000);
 }
