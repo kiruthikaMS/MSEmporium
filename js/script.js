@@ -755,7 +755,7 @@ if(pageHeight > 1200) pageHeight = 1200; // ✅ 10 Order-ku Mela Irundhalum - Si
   doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 7.5; newPageIfNeeded();
 }
     // ===== PREVIEW MAARIYE - Header Center =====
-    doc.setFont('courier','bold'); doc.setFontSize(20);
+    doc.setFont('courier','bold'); doc.setFontSize(22);
     doc.text('MS EMPORIUM', CX, y, {align:'center'}); y += 6;
     doc.setFont('courier','bold'); doc.setFontSize(15);
     doc.text('Juices & Snacks', CX, y, {align:'center'}); y += 4;
