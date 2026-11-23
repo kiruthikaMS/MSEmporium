@@ -108,8 +108,7 @@
     <div class="d-flex justify-content-between align-items-center mb-2">
       <button class="btn btn-dark btn-sm" onclick="showPage('billing')"><i class="bi bi-arrow-left"></i> Back to Menu</button>
       <div class="text-center"><h6 class="fw-bold m-0">Saved Bills <span id="cnt2" class="badge bg-secondary"></span></h6><small id="summary" class="text-muted"></small></div>
-      <button class="btn btn-success btn-sm" onclick="downloadReport()"><i class="bi bi-download"></i> Download Report</button>
-      <button class="btn btn-primary" onclick="sendReportToMail()">📧 Send Report to Mail</button>
+      <button class="btn btn-primary" onclick="sendReportToMail()">📧 Download & Send Report</button>
       <button class="btn btn-outline-danger" onclick="clearBills()">🗑 Clear Bills</button>
     </div>
     <div class="table-responsive bg-white border rounded mt-3">
@@ -220,7 +219,37 @@ if('serviceWorker' in navigator){
 </script>
 
 <script>
-var REPORT_MAIL_URL = "https://script.google.com/macros/s/AKfycbxMUCYAx8XYZ9HCBmxOzTMfVAz-aWDVpwwsG6mjcBnkrW6yQGYJ0xDb_nIDaXZ9hsQ9Uw/exec";
+var REPORT_MAIL_URL = "https://script.google.com/macros/s/AKfycbw8CMeGB9Pak8EvcChQj755O9sJPKF58N1w5_8pfDWUDrEJ-FxtWFSYJ73YJ2mLy1Z8VQ/exec";
+var SYNC_URL = REPORT_MAIL_URL;
+
+// ✅ Order edutha udane Cloud ku anuppu
+function syncPushOrder(){
+  if(!currentTable) return;
+  var order = {tableNo: tableLabel(currentTable), items: cart, total: cart.reduce((s,c)=>s+c.price*c.qty,0), cusMob: document.getElementById('custMobHome')?.value||'', payMode: document.querySelector('input[name="payModeHome"]:checked')?.value||'Cash'};
+  // ✅ FIX - syncFrame iframe-a create pannu - Illana Pudhu Tab open aagum!
+  var fr = document.getElementById('syncFrameHidden');
+  if(!fr){ fr = document.createElement('iframe'); fr.id='syncFrameHidden'; fr.name='syncFrameHidden'; fr.style.display='none'; document.body.appendChild(fr); }
+  var f = document.createElement('form');
+  f.method='POST'; f.action=SYNC_URL; f.target='syncFrameHidden'; f.style.display='none';
+  var inp=document.createElement('input'); inp.name='syncOrder'; inp.value=JSON.stringify(order);
+  f.appendChild(inp); document.body.appendChild(f); f.submit();
+  setTimeout(()=>f.remove(), 2000);
+}
+
+// ✅ 10 sec ku oru vaati - Innoru device oda order-a eduthuko
+function syncPullOrders(){
+  fetch(SYNC_URL).then(r=>r.json()).then(orders=>{
+    if(!orders || !orders.length) return;
+    orders.forEach(function(o){
+      var t = 'T' + String(o.tableNo||'').replace(/[^0-9]/g,'');
+      if(tableOrders[t]) tableOrders[t] = o.items || [];
+      if(o.cusMob) tableMobNos[t] = o.cusMob;
+      if(o.payMode) tablePayModes[t] = o.payMode;
+    });
+    renderHomeTables(); renderCart();
+  }).catch(()=>{});
+}
+setInterval(syncPullOrders, 10000);
 
 function sendReportToMail(){
   if(typeof bills === 'undefined' || bills.length===0){ alert('Send panna bill ye illa!'); return; }
@@ -246,7 +275,7 @@ function sendReportToMail(){
   form.appendChild(inp);
   document.body.appendChild(form);
   form.submit();
-  alert('✅ Report Download aachu! Mail anuppitachu - 1 nimishathula Gmail la paaru.');
+  alert('✅ Report Downloaded! Mail Sent!...');
 }
 </script>
 
