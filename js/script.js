@@ -739,7 +739,7 @@ var totalNameLines = 0;
 var pageHeight = 72 + (totalNameLines * 9) + (itemsCount * 7) + (b.parcelCharge ? 10 : 0) + 18;
 // 70 = Header + Bill info, 30 = Total + Thank You ku space
 if(pageHeight < 100) pageHeight = 100;
-if(pageHeight > 400) pageHeight = 400;
+if(pageHeight > 1200) pageHeight = 1200; // ✅ 10 Order-ku Mela Irundhalum - Single Page!
 
   var doc = new jsPDF({orientation:'portrait', unit:'mm', format:[58, pageHeight]});
   // ... meedhi code ellam - dashed, leftRight, items, TOTAL, doc.save
@@ -747,11 +747,11 @@ if(pageHeight > 400) pageHeight = 400;
 
        var W = 58, CX = 29, L = 2, R = 56;
     var y = 7;
-    function newPageIfNeeded(){ if(y > pageHeight - 18){ doc.addPage([58, pageHeight]); y = 7; } }
+       function newPageIfNeeded(){ /* ✅ Single Page Mattum - Pudhu Page Vendaam! */ }
     function dashed(){ doc.setFont('courier','bold'); doc.setFontSize(11); doc.text('------------------------------', CX, y, {align:'center'}); y += 5; newPageIfNeeded(); }
     function leftRight(left, right, size, bold){
   doc.setFont('courier', bold?'bold':'normal'); doc.setFontSize(size||12);
-  doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 8; newPageIfNeeded();
+  doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 7.5; newPageIfNeeded();
 }
     // ===== PREVIEW MAARIYE - Header Center =====
     doc.setFont('courier','bold'); doc.setFontSize(20);
@@ -773,7 +773,6 @@ if(b.date){
 }
 leftRight('Bill:', b.billNo, 12, false);
 leftRight('Date:', datePart, 12, false);
-    y += 3; // ✅ Date ku Appuram - Gap!
 leftRight('Time:', timePart, 12, false);
 leftRight('Table:', b.tableNo || '-', 12, false);
 leftRight('Mob No:', b.cusMob || '-', 12, false);
