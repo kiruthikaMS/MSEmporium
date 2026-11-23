@@ -736,7 +736,7 @@ var totalNameLines = 0;
   if(lines < 1) lines = 1;
   totalNameLines += lines;
 });
-var pageHeight = 72 + (totalNameLines * 9) + (itemsCount * 7) + (b.parcelCharge ? 10 : 0) + 18;
+var pageHeight = 100 + (totalNameLines * 9) + (itemsCount * 14) + (b.parcelCharge ? 12 : 0) + 35;
 // 70 = Header + Bill info, 30 = Total + Thank You ku space
 if(pageHeight < 100) pageHeight = 100;
 if(pageHeight > 1200) pageHeight = 1200; // ✅ 10 Order-ku Mela Irundhalum - Single Page!
