@@ -353,7 +353,7 @@ function addCart(id){
   let prod=products.find(x=>x.id==id); if(!prod) return;
   let ex=cart.find(c=>c.id==id); if(ex) ex.qty++; else cart.push({id:prod.id, name:prod.name, price:parseFloat(prod.price), qty:1});
   renderCart();
-  syncPushOrder();
+  
 }
 
 // Others - Type panna amount-a cart la Others item-a serthu
@@ -370,14 +370,14 @@ function setOthersAmt(val){
     else { cart.push({id:9999, name:'Others', price:amt, qty:1}); }
   }
   renderCart();
-  syncPushOrder();
+  
 }
 
 function removeOthers(){
   var ex = cart.find(c => c.name === 'Others');
   if(ex) cart.splice(cart.indexOf(ex), 1);
   renderCart();
-  syncPushOrder();
+  
 }
 
 function renderCart(){
@@ -402,8 +402,8 @@ var othersVal = othersItem ? othersItem.price : '';
 ['othersAmt','othersAmtHome'].forEach(id=>{ var el=document.getElementById(id); if(el && document.activeElement !== el) el.value = othersVal; });
   renderHomeTables();
 }
-function chg(i,d){ cart[i].qty+=d; if(cart[i].qty<=0) cart.splice(i,1); renderCart(); syncPushOrder(); }
-function rem(i){ cart.splice(i,1); renderCart(); syncPushOrder(); }
+function chg(i,d){ cart[i].qty+=d; if(cart[i].qty<=0) cart.splice(i,1); renderCart(); }
+function rem(i){ cart.splice(i,1); renderCart();  }
 
 function saveBill(){
   if(cart.length==0){ alert('Add items first - Cart empty!'); return false; }
@@ -797,25 +797,20 @@ leftRight('Payment Mode:', b.payMode || 'Cash', 14, false);
     doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 7;
     doc.setFont('courier','normal'); doc.setFontSize(11);
     doc.text('********************', CX, y, {align:'center'}); y += 7;
-    var fileName = (b.billNo || 'BILL001') + '.pdf';
+        var fileName = (b.billNo || 'BILL001') + '.pdf';
+    // ✅ Share ku MUNNADI-ye Save - Confirm-e Illa!
+    confirmPrintAfterPDF();
+
     try{
       var blob = doc.output('blob');
       var file = new File([blob], fileName, {type:'application/pdf'});
       if(navigator.canShare && navigator.canShare({files:[file]})){
-        navigator.share({files:[file], title: fileName, text:'MS Emporium Bill '+b.billNo}).then(function(){
-          setTimeout(function(){ if(confirm('PDF Share aachu! Bill-a save pannava? Yes kudutha Table clear aagum.')){ confirmPrintAfterPDF(); } }, 500);
-        }).catch(function(){
+        navigator.share({files:[file], title: fileName, text:'MS Emporium Bill '+b.billNo}).catch(function(){
           doc.save(fileName);
-          alert('Share cancel pannitinga. PDF open aana - mela Share icon -> Save to Files nu kudunga.');
         });
         return;
       } else { doc.save(fileName); }
     }catch(e){ doc.save(fileName); }
-    setTimeout(function(){
-      if(confirm('PDF Download aachu! Ippo bill-a save pannava? Yes kudutha Table clear aagum.')){
-        confirmPrintAfterPDF();
-      }
-    }, 800);
   }catch(e){
     alert('PDF error: ' + e.message);
   }
@@ -832,7 +827,7 @@ function confirmPrintAfterPDF(){
 if(typeof tableMobNos !== 'undefined' && currentTable){ delete tableMobNos[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); }
 if(typeof tablePayModes !== 'undefined' && currentTable){ delete tablePayModes[currentTable]; localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   
-  forceClearTableInSheet();
+  
   if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   
   pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome(); renderHomeTables(); 
@@ -907,7 +902,7 @@ if(currentTable){ clearedTablesAt[currentTable] = Date.now(); localStorage.setIt
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
 if(typeof tableMobNos !== 'undefined' && currentTable){ delete tableMobNos[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); }
 if(typeof tablePayModes !== 'undefined' && currentTable){ delete tablePayModes[currentTable]; localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
-forceClearTableInSheet();
+
   if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   
   
@@ -965,25 +960,6 @@ function buildReceiptHTML(b){
     + '<div style="font-size:13px;letter-spacing:1px;">******</div>'
     + '</div>';
 }
-
-// ✅ Save & Print mudinjadhum - Sheet la Indha Table Row-a Delete Pannu
-function forceClearTableInSheet(){
-  if(!currentTable) return;
-  var t = currentTable;
-  var url = (typeof SYNC_URL !== 'undefined' && SYNC_URL) ? SYNC_URL : ((typeof REPORT_MAIL_URL !== 'undefined' && REPORT_MAIL_URL) ? REPORT_MAIL_URL : (window.SYNC_URL || ''));
-if(!url){ alert('SYNC_URL illa! Sheet Clear aagadhu! index.html la SYNC_URL check pannunga!'); return; }
-  // Table Label - T1 / T2
-  var label = (typeof tableLabel === 'function') ? tableLabel(t) : t;
-  var fr = document.getElementById('syncFrameHidden');
-  if(!fr){ fr = document.createElement('iframe'); fr.id='syncFrameHidden'; fr.name='syncFrameHidden'; fr.style.display='none'; document.body.appendChild(fr); }
-  var f = document.createElement('form');
-  f.method='POST'; f.action=url; f.target='syncFrameHidden'; f.style.display='none';
-  var inp=document.createElement('input'); inp.name='syncOrder';
-  // ✅ Items: [] - Idha Paatha Apps Script Row-a Delete Pannidum!
-  inp.value=JSON.stringify({tableNo: label, items:[], total:0, cusMob:'', payMode:'Cash'});
-  f.appendChild(inp); document.body.appendChild(f); f.submit();
-  setTimeout(function(){ f.remove(); }, 2000);
-}
 function clearAllData(){
   if(!confirm('Full-a Clear pannava? Ellla Table + Saved Bills-um Pogum!')) return;
   // ✅ Local Full Clear
@@ -995,5 +971,6 @@ function clearAllData(){
   // ✅ Sheet-um Clear - Empty Order Anuppu!
   if(typeof forceClearTableInSheet === 'function'){ var oldTable = currentTable; ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10'].forEach(function(t){ currentTable = t; forceClearTableInSheet(); }); currentTable = oldTable; }
   cart=[]; renderCart(); renderSaved(); renderHomeTables(); showHome();
-  alert('✅ All Cleared Start New Order!...');
+  alert('✅ Full Clear Aayiduchu! Fresh-a Start Pannalam!');
 }
+
