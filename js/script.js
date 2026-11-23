@@ -349,6 +349,7 @@ function addCart(id){
   let prod=products.find(x=>x.id==id); if(!prod) return;
   let ex=cart.find(c=>c.id==id); if(ex) ex.qty++; else cart.push({id:prod.id, name:prod.name, price:parseFloat(prod.price), qty:1});
   renderCart();
+  syncPushOrder();
 }
 
 // Others - Type panna amount-a cart la Others item-a serthu
