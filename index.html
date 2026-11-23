@@ -211,7 +211,7 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/script.js?v=64"></script>
+<script src="js/script.js?v=73"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js');
@@ -238,18 +238,27 @@ function syncPushOrder(){
 
 // ✅ 10 sec ku oru vaati - Innoru device oda order-a eduthuko
 function syncPullOrders(){
-  fetch(SYNC_URL).then(r=>r.json()).then(orders=>{
-    if(!orders || !orders.length) return;
-    orders.forEach(function(o){
-      var t = 'T' + String(o.tableNo||'').replace(/[^0-9]/g,'');
-      if(tableOrders[t]) tableOrders[t] = o.items || [];
-      if(o.cusMob) tableMobNos[t] = o.cusMob;
-      if(o.payMode) tablePayModes[t] = o.payMode;
-    });
-    renderHomeTables(); renderCart();
-  }).catch(()=>{});
+  var old = document.getElementById('syncPullScript');
+  if(old) old.remove();
+  var s = document.createElement('script');
+  s.id = 'syncPullScript';
+  s.src = SYNC_URL + '?callback=syncPullDone&_=' + Date.now();
+  document.body.appendChild(s);
 }
-setInterval(syncPullOrders, 10000);
+function syncPullDone(orders){
+  if(!orders || !orders.length) return;
+  orders.forEach(function(o){
+    var t = 'T' + String(o.tableNo||'').replace(/[^0-9]/g,'');
+    if(tableOrders[t]) tableOrders[t] = o.items || [];
+    if(o.cusMob) tableMobNos[t] = o.cusMob;
+    if(o.payMode) tablePayModes[t] = o.payMode;
+  });
+  renderHomeTables(); renderCart();
+}
+
+// ✅ Idhu dhan missing - Idha add pannu!
+syncPullOrders(); // Open pannadhum oru vaati eduthuko
+setInterval(syncPullOrders, 10000); // 10 sec ku oru vaati thirumba eduthuko
 
 function sendReportToMail(){
   if(typeof bills === 'undefined' || bills.length===0){ alert('Send panna bill ye illa!'); return; }
