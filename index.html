@@ -110,7 +110,7 @@
       <button class="btn btn-dark btn-sm" onclick="showPage('billing')"><i class="bi bi-arrow-left"></i> Back to Menu</button>
       <div class="text-center"><h6 class="fw-bold m-0">Saved Bills <span id="cnt2" class="badge bg-secondary"></span></h6><small id="summary" class="text-muted"></small></div>
       <button class="btn btn-primary" onclick="sendReportToMail()">📧 Download & Send Report</button>
-      <button class="btn btn-danger w-100 mt-2" onclick="clearAllData()">🗑️ Clear All</button>
+      <button class="btn btn-danger w-20 mt-2" onclick="clearAllData()">🗑️ Clear All</button>
       
     </div>
     <div class="table-responsive bg-white border rounded mt-3">
@@ -222,58 +222,6 @@ if('serviceWorker' in navigator){
 
 <script>
 var REPORT_MAIL_URL = "https://script.google.com/macros/s/AKfycbw8CMeGB9Pak8EvcChQj755O9sJPKF58N1w5_8pfDWUDrEJ-FxtWFSYJ73YJ2mLy1Z8VQ/exec";
-var SYNC_URL = REPORT_MAIL_URL;
-
-// ✅ Order edutha udane Cloud ku anuppu
-function syncPushOrder(){
-  if(!currentTable) return;
-  var order = {tableNo: tableLabel(currentTable), items: cart, total: cart.reduce((s,c)=>s+c.price*c.qty,0), cusMob: document.getElementById('custMobHome')?.value||'', payMode: document.querySelector('input[name="payModeHome"]:checked')?.value||'Cash'};
-  // ✅ FIX - syncFrame iframe-a create pannu - Illana Pudhu Tab open aagum!
-  var fr = document.getElementById('syncFrameHidden');
-  if(!fr){ fr = document.createElement('iframe'); fr.id='syncFrameHidden'; fr.name='syncFrameHidden'; fr.style.display='none'; document.body.appendChild(fr); }
-  var f = document.createElement('form');
-  f.method='POST'; f.action=SYNC_URL; f.target='syncFrameHidden'; f.style.display='none';
-  var inp=document.createElement('input'); inp.name='syncOrder'; inp.value=JSON.stringify(order);
-  f.appendChild(inp); document.body.appendChild(f); f.submit();
-  setTimeout(()=>f.remove(), 2000);
-}
-
-// ✅ 10 sec ku oru vaati - Innoru device oda order-a eduthuko
-function syncPullOrders(){
-  var old = document.getElementById('syncPullScript');
-  if(old) old.remove();
-  var s = document.createElement('script');
-  s.id = 'syncPullScript';
-  s.src = SYNC_URL + '?callback=syncPullDone&_=' + Date.now();
-  document.body.appendChild(s);
-}
-
- function syncPullDone(orders){
-  if(!orders || !orders.length) return;
-  orders.forEach(function(o){
-    var t = 'T' + String(o.tableNo||'').replace(/[^0-9]/g,'');
-    // ✅ Clear Panna Table - Local la Empty-a Irundha - Sheet Order-a Ignore pannu!
-    if(typeof clearedTablesAt !== 'undefined' && clearedTablesAt[t] && (!tableOrders[t] || tableOrders[t].length === 0)){
-      return;
-    }
-    // ✅ INGA PODANUM - Pazhaya Line ku Badhila - Idha Podu!
-    if(tableOrders[t]) tableOrders[t] = (o.items || []).slice();
-    // ✅ Items Empty-na - Mob + Mode-um Delete pannu!
-    if(!o.items || o.items.length === 0){
-      if(typeof tableMobNos !== 'undefined') delete tableMobNos[t];
-      if(typeof tablePayModes !== 'undefined') delete tablePayModes[t];
-    } else {
-      if(o.cusMob) tableMobNos[t] = o.cusMob;
-      if(o.payMode) tablePayModes[t] = o.payMode;
-    }
-  });
-  renderHomeTables(); renderCart();
-}
-
-// ✅ Idhu dhan missing - Idha add pannu!
-syncPullOrders(); // Open pannadhum oru vaati eduthuko
-setInterval(syncPullOrders, 10000); // 10 sec ku oru vaati thirumba eduthuko
-
 function sendReportToMail(){
   if(typeof bills === 'undefined' || bills.length===0){ alert('Send panna bill ye illa!'); return; }
   downloadReport();
