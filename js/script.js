@@ -751,7 +751,7 @@ if(pageHeight > 400) pageHeight = 400;
     function dashed(){ doc.setFont('courier','bold'); doc.setFontSize(11); doc.text('------------------------------', CX, y, {align:'center'}); y += 5; newPageIfNeeded(); }
     function leftRight(left, right, size, bold){
   doc.setFont('courier', bold?'bold':'normal'); doc.setFontSize(size||12);
-  doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 7.5; newPageIfNeeded();
+  doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 8; newPageIfNeeded();
 }
     // ===== PREVIEW MAARIYE - Header Center =====
     doc.setFont('courier','bold'); doc.setFontSize(20);
@@ -773,6 +773,7 @@ if(b.date){
 }
 leftRight('Bill:', b.billNo, 12, false);
 leftRight('Date:', datePart, 12, false);
+    y += 3; // ✅ Date ku Appuram - Gap!
 leftRight('Time:', timePart, 12, false);
 leftRight('Table:', b.tableNo || '-', 12, false);
 leftRight('Mob No:', b.cusMob || '-', 12, false);
