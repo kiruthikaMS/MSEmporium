@@ -366,12 +366,14 @@ function setOthersAmt(val){
     else { cart.push({id:9999, name:'Others', price:amt, qty:1}); }
   }
   renderCart();
+  syncPushOrder();
 }
 
 function removeOthers(){
   var ex = cart.find(c => c.name === 'Others');
   if(ex) cart.splice(cart.indexOf(ex), 1);
   renderCart();
+  syncPushOrder();
 }
 
 function renderCart(){
@@ -396,8 +398,8 @@ var othersVal = othersItem ? othersItem.price : '';
 ['othersAmt','othersAmtHome'].forEach(id=>{ var el=document.getElementById(id); if(el && document.activeElement !== el) el.value = othersVal; });
   renderHomeTables();
 }
-function chg(i,d){ cart[i].qty+=d; if(cart[i].qty<=0) cart.splice(i,1); renderCart(); }
-function rem(i){ cart.splice(i,1); renderCart(); }
+function chg(i,d){ cart[i].qty+=d; if(cart[i].qty<=0) cart.splice(i,1); renderCart(); syncPushOrder(); }
+function rem(i){ cart.splice(i,1); renderCart(); syncPushOrder(); }
 
 function saveBill(){
   if(cart.length==0){ alert('Add items first - Cart empty!'); return false; }
@@ -854,6 +856,7 @@ function confirmPrintAfterPDF(){
   document.getElementById('previewModal').style.display='none';
   bills.push(b); localStorage.setItem('ms_bills', JSON.stringify(bills));
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
+  if(typeof syncPushOrder === 'function') syncPushOrder(); 
   if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
   var sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' PDF Saved! Print the File....'; sm.style.display='block'; setTimeout(()=>sm.style.display='none',5000); }
@@ -916,6 +919,7 @@ function confirmPrint(){
     w.document.close();
   }
   tableOrders[currentTable]=[]; parcelOrders[currentTable]=0; parcelClicks[currentTable]=0; syncCart();
+  if(typeof syncPushOrder === 'function') syncPushOrder(); 
   if(currentTable){ delete tableMobNos[currentTable]; delete tablePayModes[currentTable]; localStorage.setItem('ms_table_mobs', JSON.stringify(tableMobNos)); localStorage.setItem('ms_table_modes', JSON.stringify(tablePayModes)); }
   pendingPrintBill=null; updateBillNo(); renderCart(); renderSaved(); showHome();
   let sm=document.getElementById('successMsgHome'); if(sm){ sm.innerHTML='✅ '+b.billNo+' Saved & Print aachu! Table: '+b.tableNo; sm.style.display='block'; setTimeout(()=>sm.style.display='none',4000); }
