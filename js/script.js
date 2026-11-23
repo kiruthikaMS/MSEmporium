@@ -750,9 +750,9 @@ if(pageHeight > 400) pageHeight = 400;
     function newPageIfNeeded(){ if(y > pageHeight - 18){ doc.addPage([58, pageHeight]); y = 7; } }
     function dashed(){ doc.setFont('courier','bold'); doc.setFontSize(11); doc.text('------------------------------', CX, y, {align:'center'}); y += 5; newPageIfNeeded(); }
     function leftRight(left, right, size, bold){
-      doc.setFont('courier', bold?'bold':'normal'); doc.setFontSize(size||12);
-      doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 6; newPageIfNeeded();
-    }
+  doc.setFont('courier', bold?'bold':'normal'); doc.setFontSize(size||12);
+  doc.text(left, L, y); doc.text(right, R, y, {align:'right'}); y += 7.5; newPageIfNeeded();
+}
     // ===== PREVIEW MAARIYE - Header Center =====
     doc.setFont('courier','bold'); doc.setFontSize(20);
     doc.text('MS EMPORIUM', CX, y, {align:'center'}); y += 6;
@@ -771,12 +771,12 @@ if(b.date){
   if(!datePart) datePart = (parts[0]||'').trim();
   timePart = (parts[1]||'').trim();
 }
-leftRight('Bill:', b.billNo, 14, false);
-leftRight('Date:', datePart, 14, false);
-leftRight('Time:', timePart, 14, false);
-leftRight('Table:', b.tableNo || '-', 14, false);
-leftRight('Mob No:', b.cusMob || '-', 14, false);
-leftRight('Payment Mode:', b.payMode || 'Cash', 14, false);
+leftRight('Bill:', b.billNo, 12, false);
+leftRight('Date:', datePart, 12, false);
+leftRight('Time:', timePart, 12, false);
+leftRight('Table:', b.tableNo || '-', 12, false);
+leftRight('Mob No:', b.cusMob || '-', 12, false);
+leftRight('Pay Mode:', b.payMode || 'Cash', 12, false);
     dashed();
     // Items - Preview maari: Name full line, aprom x Qty left / Price right
     b.items.forEach(function(i){
@@ -796,7 +796,7 @@ leftRight('Payment Mode:', b.payMode || 'Cash', 14, false);
     doc.setFont('courier','bold'); doc.setFontSize(11);
     doc.text('Thank you! Visit Again', CX, y, {align:'center'}); y += 7;
     doc.setFont('courier','normal'); doc.setFontSize(11);
-    doc.text('********************', CX, y, {align:'center'}); y += 7;
+    doc.text('********************', CX, y, {align:'center'}); y += 7.5;
         var fileName = (b.billNo || 'BILL001') + '.pdf';
     // ✅ Share ku MUNNADI-ye Save - Confirm-e Illa!
     confirmPrintAfterPDF();
