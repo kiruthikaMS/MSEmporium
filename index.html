@@ -26,7 +26,8 @@
       <small style="color:#ffffff !important; font-size:13px; font-weight:600;">Juices & Snacks</small>
     </div>
   </div>
-  <div><button class="btn btn-dark btn-sm" onclick="showHome()">🏠 Home</button> <button class="btn btn-dark btn-sm" onclick="showPage('billing')"><i class="bi bi-receipt"></i> Menu</button> <button class="btn btn-outline-success btn-sm" onclick="showPage('saved')"><i class="bi bi-journal-text"></i> <span class="saved">Saved Bills</span> <span id="cnt" class="badge bg-success ms-1">0</span></button></div>
+  <div><button class="btn btn-dark btn-sm" onclick="showHome()">🏠 Home</button> <button class="btn btn-dark btn-sm" onclick="showPage('billing')"><i class="bi bi-receipt"></i> Menu</button> <button class="btn btn-outline-success btn-sm" onclick="showPage('saved')"><i class="bi bi-journal-text"></i> <span class="saved">Saved Bills</span> <span id="cnt" class="badge bg-success ms-1">0</span></button>
+  </div>
 </div>
 
 <div class="container-fluid p-3">
@@ -109,7 +110,7 @@
       <button class="btn btn-dark btn-sm" onclick="showPage('billing')"><i class="bi bi-arrow-left"></i> Back to Menu</button>
       <div class="text-center"><h6 class="fw-bold m-0">Saved Bills <span id="cnt2" class="badge bg-secondary"></span></h6><small id="summary" class="text-muted"></small></div>
       <button class="btn btn-primary" onclick="sendReportToMail()">📧 Download & Send Report</button>
-      <button class="btn btn-outline-danger" onclick="clearBills()">🗑 Clear Bills</button>
+      
     </div>
     <div class="table-responsive bg-white border rounded mt-3">
       <table class="table table-sm small mb-0"><thead class="table-light"><tr><th>BILL NO</th><th>DATE/TIME</th><th>TABLE NO</th><th>ITEMS</th><th>TOTAL</th><th>CUS MOB NO</th><th>MODE</th></tr></thead><tbody id="savedBody"></tbody></table>
@@ -184,11 +185,11 @@
     <!-- Buttons -->
     <div style="display:flex; gap:10px; margin-bottom:10px;">
       <button onclick="closeBillModal()" style="flex:1; padding:14px; background:#111827; color:white; border:none; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer;">✕ Close</button>
-      <button id="printBtn" onclick="handlePrint()" style="flex:1; padding:14px; background:#16a34a; color:white; border:none; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:6px;">🖨️ Print</button>
+      <button id="printBtn" onclick="handlePrint()" style="flex:1; padding:14px; background:#16a34a; color:white; border:none; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:6px;">🖨️ Print and Save for Mobile</button>
     </div>
     
     <!-- iOS Save as PDF - auto show for iOS -->
-    <button id="pdfBtn" onclick="saveAsPDF_iOS()" style="width:100%; padding:14px; background:#2563eb; color:white; border:none; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer; display:none; justify-content:center; align-items:center; gap:6px;">📄 Save as PDF</button>
+    <button id="pdfBtn" onclick="saveAsPDF_iOS()" style="width:100%; padding:14px; background:#2563eb; color:white; border:none; border-radius:12px; font-weight:600; font-size:15px; cursor:pointer; display:none; justify-content:center; align-items:center; gap:6px;">📄 Print and Save for Ipad</button>
     <div id="iosHint" style="text-align:center; font-size:11px; color:#6b7280; margin-top:6px; display:none;">iOS • Save a copy to Files</div>
     
   </div>
@@ -203,7 +204,7 @@
   <div style="background:#fff;width:100%;max-width:380px;border-radius:16px;padding:20px;">
     <h5 class="fw-bold text-center">MS Emporium</h5><p class="text-center small text-muted">Juices &amp; Snacks</p><hr>
     <div id="previewBody"></div>
-    <div class="d-flex gap-2 mt-3"><button class="btn btn-dark flex-fill" onclick="closePreview()">Cancel</button><button class="btn btn-success flex-fill" onclick="confirmPrint()">🖨️ Print</button></div><button class="btn btn-primary w-100 mt-2" onclick="savePreviewAsPDF()">📄 Save as PDF - iPad</button>
+    <div class="d-flex gap-2 mt-3"><button class="btn btn-dark flex-fill" onclick="closePreview()">Cancel</button><button class="btn btn-success flex-fill" onclick="confirmPrint()">🖨️ Print</button></div><button class="btn btn-primary w-100 mt-2" onclick="savePreviewAsPDF()">📄 Print and Save for Ipad</button>
   </div>
 </div>
 <div class="footer">
@@ -245,13 +246,25 @@ function syncPullOrders(){
   s.src = SYNC_URL + '?callback=syncPullDone&_=' + Date.now();
   document.body.appendChild(s);
 }
-function syncPullDone(orders){
+
+ function syncPullDone(orders){
   if(!orders || !orders.length) return;
   orders.forEach(function(o){
     var t = 'T' + String(o.tableNo||'').replace(/[^0-9]/g,'');
-    if(tableOrders[t]) tableOrders[t] = o.items || [];
-    if(o.cusMob) tableMobNos[t] = o.cusMob;
-    if(o.payMode) tablePayModes[t] = o.payMode;
+    // ✅ Clear Panna Table - Local la Empty-a Irundha - Sheet Order-a Ignore pannu!
+    if(typeof clearedTablesAt !== 'undefined' && clearedTablesAt[t] && (!tableOrders[t] || tableOrders[t].length === 0)){
+      return;
+    }
+    // ✅ INGA PODANUM - Pazhaya Line ku Badhila - Idha Podu!
+    if(tableOrders[t]) tableOrders[t] = (o.items || []).slice();
+    // ✅ Items Empty-na - Mob + Mode-um Delete pannu!
+    if(!o.items || o.items.length === 0){
+      if(typeof tableMobNos !== 'undefined') delete tableMobNos[t];
+      if(typeof tablePayModes !== 'undefined') delete tablePayModes[t];
+    } else {
+      if(o.cusMob) tableMobNos[t] = o.cusMob;
+      if(o.payMode) tablePayModes[t] = o.payMode;
+    }
   });
   renderHomeTables(); renderCart();
 }
@@ -284,6 +297,13 @@ function sendReportToMail(){
   form.appendChild(inp);
   document.body.appendChild(form);
   form.submit();
+  // ✅ INGA PODU - Mail Anuppina Odane - Saved Bills Clear!
+setTimeout(function(){
+  bills = [];
+  localStorage.setItem('ms_bills', JSON.stringify(bills));
+  if(typeof renderSaved === 'function') renderSaved();
+  if(typeof renderSavedBills === 'function') renderSavedBills();
+}, 1500);
   alert('✅ Report Downloaded! Mail Sent!...');
 }
 </script>
