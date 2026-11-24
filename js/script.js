@@ -110,7 +110,7 @@ let products = [
   {id:78, name:'Pineapple Tea', cat:'Beverages', price:30, img:'beverages/pineapple tea.jpg'},
   {id:79, name:'Boost', cat:'Beverages', price:20, img:'beverages/boost.jpg'},
   {id:80, name:'Horlicks', cat:'Beverages', price:20, img:'beverages/horlicks.jpg'},
-  {id:81, name:'Elachi Tea', cat:'Beverages', price:25, img:'beverages/elachi Tea.jpg'},
+  {id:81, name:'Elachi Tea', cat:'Beverages', price:25, img:'beverages/elachiTea.jpg'},
   {id:82, name:'Pineapple Tea with Honey', cat:'Beverages', price:35, img:'beverages/pineapple tea honey.jpg'},
   {id:83, name:'Cold Horlicks', cat:'Beverages', price:70, img:'beverages/cold horlicks.jpg'},
   {id:84, name:'Cold Boost', cat:'Beverages', price:70, img:'beverages/cold boost.jpg'},
